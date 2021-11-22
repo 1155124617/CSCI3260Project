@@ -584,8 +584,9 @@ void paintGL(void)  //always run
 	//Draw Planet:
 	modelMatrix = mat4(1.0f);
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 1.5f, scaleFactor * 1.5f, scaleFactor * 1.5f));
-	modelMatrix = rotate(modelMatrix, (float)glfwGetTime(), vec3(0.0f, 1.0f, 0.0f));
+	modelMatrix = rotate(modelMatrix, (float)(glfwGetTime()* 0.1f), vec3(0.0f, 1.0f, 0.0f));
 	modelMatrix = rotate(modelMatrix, (float)radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
+    modelMatrix = scale(modelMatrix, vec3(5.0f,5.0f,5.0f));
     modelMatrix = translate(modelMatrix, vec3(0.0f, -1.04894f, 0.0f));
 	shader.setMat4("model", modelMatrix);
 	planetTexture.bind(0);
@@ -614,7 +615,7 @@ void paintGL(void)  //always run
 	//Draw Local Crafts:
 	modelMatrix = mat4(1.0f);
 	modelMatrix = rotate(modelMatrix, rotate_speed*(float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
-	modelMatrix = translate(modelMatrix, vec3(0.0f, -0.1f, 2.0f));
+	modelMatrix = translate(modelMatrix, vec3(0.0f, -0.1f, 5.0f));
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
 	shader.setMat4("model", modelMatrix);
 	craftTexture[collision_near].bind(0);

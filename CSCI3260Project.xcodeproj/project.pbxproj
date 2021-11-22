@@ -43,7 +43,6 @@
 		D185E98C274B710D00BC78CF /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		D185E98E274B711800BC78CF /* libGLEW.2.2.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libGLEW.2.2.0.dylib; path = ../../../../../../opt/homebrew/Cellar/glew/2.2.0_1/lib/libGLEW.2.2.0.dylib; sourceTree = "<group>"; };
 		D185E990274B712300BC78CF /* libglfw.3.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libglfw.3.3.dylib; path = ../../../../../../opt/homebrew/Cellar/glfw/3.3.4/lib/libglfw.3.3.dylib; sourceTree = "<group>"; };
-		D185E992274B719600BC78CF /* CourseProjectMaterials */ = {isa = PBXFileReference; lastKnownFileType = folder; path = CourseProjectMaterials; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -90,7 +89,6 @@
 				D12EFF8D274BAB6700A8F88A /* Resources */,
 				D12EFF8E274BAB6700A8F88A /* VertexShaderCode.glsl */,
 				D12EFF8B274B7E9A00A8F88A /* Dependencies */,
-				D185E992274B719600BC78CF /* CourseProjectMaterials */,
 				D185E984274B70F800BC78CF /* main.cpp */,
 			);
 			path = CSCI3260Project;
