@@ -36,6 +36,8 @@
 		D12EFF90274BAC1400A8F88A /* Shader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Shader.h; sourceTree = "<group>"; };
 		D12EFF91274BAC1400A8F88A /* Texture.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Texture.cpp; sourceTree = "<group>"; };
 		D12EFF92274BAC1400A8F88A /* Texture.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Texture.h; sourceTree = "<group>"; };
+		D12EFF95274BFED300A8F88A /* FragmentShaderCodeSkyBox.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = FragmentShaderCodeSkyBox.glsl; sourceTree = "<group>"; };
+		D12EFF96274BFED300A8F88A /* VertexShaderCodeSkyBox.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = VertexShaderCodeSkyBox.glsl; sourceTree = "<group>"; };
 		D185E981274B70F800BC78CF /* CSCI3260Project */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CSCI3260Project; sourceTree = BUILT_PRODUCTS_DIR; };
 		D185E984274B70F800BC78CF /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		D185E98C274B710D00BC78CF /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
@@ -78,6 +80,8 @@
 		D185E983274B70F800BC78CF /* CSCI3260Project */ = {
 			isa = PBXGroup;
 			children = (
+				D12EFF95274BFED300A8F88A /* FragmentShaderCodeSkyBox.glsl */,
+				D12EFF96274BFED300A8F88A /* VertexShaderCodeSkyBox.glsl */,
 				D12EFF8F274BAC1400A8F88A /* Shader.cpp */,
 				D12EFF90274BAC1400A8F88A /* Shader.h */,
 				D12EFF91274BAC1400A8F88A /* Texture.cpp */,

@@ -77,7 +77,7 @@ struct SpaceCraftMovement {
 
 
 //Structure Variables:
-Shader shader;
+Shader shader, skyboxShader;
 Path path;
 SpaceCraftMovement spmv;
 
@@ -98,6 +98,7 @@ skyboxVAO, skyboxEBO;
 
 //Texture vriables:
 Texture rockTexture, spacecraftTexture[2],craftTexture[2],planetTexture;
+GLuint cubemapTexture;
 
 GLuint programID;
 
@@ -317,8 +318,72 @@ void get_OpenGL_info()
 
 void sendDataToOpenGL()
 {
-	struct Path paths;
-	GLuint VBO;
+    struct Path paths;
+    GLuint VBO;
+    // load skybox
+    GLfloat skyboxVertices[] =
+    {
+        // Positions
+        -1.0f, 1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, -1.0f, -1.0f,
+        1.0f, 1.0f, -1.0f,
+        -1.0f, 1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f
+    };
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &VBO);
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    glBindVertexArray(0);
+    // CubeMap texture loading
+    std::vector<const GLchar*> faces;
+    faces.push_back(paths.skybox_right);
+    faces.push_back(paths.skybox_left);
+    faces.push_back(paths.skybox_top);
+    faces.push_back(paths.skybox_bottom);
+    faces.push_back(paths.skybox_bottom);
+    faces.push_back(paths.skybox_front);
+    cubemapTexture = loadCubemap(faces);
+    
 	//Load Planet:
 	Planet = loadOBJ(paths.planet);
 	planetTexture.setupTexture(paths.planet_image_texture);
@@ -429,6 +494,7 @@ void initializedGL(void) //run only once
 	sendDataToOpenGL();
 
 	shader.setupShader("VertexShaderCode.glsl", "FragmentShaderCode.glsl");
+    skyboxShader.setupShader("VertexShaderCodeSkyBox.glsl", "FragmentShaderCodeSkyBox.glsl");
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 }
@@ -437,7 +503,11 @@ void paintGL(void)  //always run
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.5f); //specify the background color, this is just an example
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	shader.use();
+    
+    //Matrices for view transformation:
+    mat4 modelMatrix = mat4(1.0f),
+        viewMatrix = mat4(1.0f),
+        projectionMatrix = mat4(1.0f);
     
     if (spmv.up_pressed) {
         spftPosX += spmv.speed * targetDirection.x;
@@ -465,18 +535,33 @@ void paintGL(void)  //always run
     
 	vec3 cameraPosition(spftPosX, spftPosY+camera_offset_Y, spftPosZ+camera_offset_Z);
 
+    // First draw sky box
+    glDepthMask(GL_FALSE);
+    skyboxShader.use();
+    //Initialization of camera view
+    projectionMatrix = perspective(radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 50.0f);
+    viewMatrix = lookAt(cameraPosition,
+        cameraPosition + targetDirection,
+        vec3(0.0f, 1.0f, 0.0f));
+    viewMatrix = glm::mat4(glm::mat3(viewMatrix));
+    skyboxShader.setMat4("view", viewMatrix);
+    skyboxShader.setMat4("projection", projectionMatrix);
+    glBindVertexArray(skyboxVAO);
+    glActiveTexture(GL_TEXTURE0);
+    skyboxShader.setInt("skybox", 0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+    glDrawArrays(GL_TRIANGLES,0,36);
+    glBindVertexArray(0);
+    glDepthMask(GL_TRUE);
+    
+    
+    
+    // Draw other elements
+    shader.use();
 
-	//Matrices for view transformation:
-	mat4 modelMatrix = mat4(1.0f),
-		viewMatrix = mat4(1.0f),
-		projectionMatrix = mat4(1.0f);
-
-
-	//Initialization of camera view
-	projectionMatrix = perspective(radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 50.0f);
-	viewMatrix = lookAt(cameraPosition,
-		cameraPosition + targetDirection,
-		vec3(0.0f, 1.0f, 0.0f));
+    viewMatrix = lookAt(cameraPosition,
+        cameraPosition + targetDirection,
+        vec3(0.0f, 1.0f, 0.0f));
 	shader.setMat4("view", viewMatrix);
 	shader.setMat4("projection", projectionMatrix);
 	shader.setVec3("eyePositionWorld", cameraPosition);
