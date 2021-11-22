@@ -26,6 +26,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D12EFF8B274B7E9A00A8F88A /* Dependencies */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Dependencies; sourceTree = "<group>"; };
 		D185E981274B70F800BC78CF /* CSCI3260Project */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CSCI3260Project; sourceTree = BUILT_PRODUCTS_DIR; };
 		D185E984274B70F800BC78CF /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		D185E98C274B710D00BC78CF /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
@@ -68,6 +69,7 @@
 		D185E983274B70F800BC78CF /* CSCI3260Project */ = {
 			isa = PBXGroup;
 			children = (
+				D12EFF8B274B7E9A00A8F88A /* Dependencies */,
 				D185E992274B719600BC78CF /* CourseProjectMaterials */,
 				D185E984274B70F800BC78CF /* main.cpp */,
 			);
