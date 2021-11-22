@@ -8,183 +8,500 @@
 // Student 2: DAI Zijie
 // SID     2: 1155141656
 //
-#include "GL/glew.h"
-#include "GLFW/glfw3.h"
-#include "glm/glm.hpp"
+
+
+#include "Dependencies/glew/glew.h"
+#include "Dependencies/GLFW/glfw3.h"
+#include "Dependencies/glm/glm.hpp"
+#include "Dependencies/stb_image/stb_image.h"
+#include "Dependencies/glm/gtc/matrix_transform.hpp"
+
+#include "Shader.h"
+#include "Texture.h"
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <map>
+#include <string>
 
-#include "Dependencies/stb_image/stb_image.h"
 
+using namespace std;
+using namespace glm;
 
-struct Vertex {
-    glm::vec3 position;
-    glm::vec2 uv;
-    glm::vec3 normal;
+// screen setting
+const int SCR_WIDTH = 800;
+const int SCR_HEIGHT = 600;
+
+//-------------------------------Self-designed variables and structures:-----------------------------
+
+struct Path{
+	//Files for planet
+	const char* planet = "./Resources/object/planet.obj";
+	const char* planet_normal_texture = "./Resources/texture/earthNormal.bmp";
+	const char* planet_image_texture = "./Resources/texture/earthTexture.bmp";
+
+	//Files for craft
+	const char* craft = "./Resources/object/craft.obj";
+	const char* red_Texture = "./Resources/texture/red.bmp";
+	const char* ring_texture = "./Resources/texture/ringTexture.bmp";
+
+	//Files for rock
+	const char* rock = "./Resources/object/rock.obj";
+	const char* rock_texture = "./Resources/texture/rockTexture.bmp";
+	const char* gold_texture = "./Resources/texture/gold.bmp";
+
+	//Files for spacecraft
+	const char* spacecraft = "./Resources/object/spacecraft.obj";
+	const char* spacecraft_texutre = "./Resources/texture/spacecraftTexture.bmp";
+
+	//Texures for skybox
+	const char* skybox_back = "./Resources/texture/skybox textures/back.bmp";
+	const char* skybox_front= "./Resources/texture/skybox textures/front.bmp";
+	const char* skybox_left= "./Resources/texture/skybox textures/left.bmp";
+	const char* skybox_right= "./Resources/texture/skybox textures/right.bmp";
+	const char* skybox_top= "./Resources/texture/skybox textures/top.bmp";
+	const char* skybox_bottom= "./Resources/texture/skybox textures/bottom.bmp";
 };
 
+
+//Structure Variables:
+Shader shader;
+Path path;
+
+
+//VAO & EBO values for the models:
+GLuint planetVAO, planetEBO,
+craftVAO, craftEBO,
+rockVAO, rockEBO,
+spacecraftVAO, spacecraftEBO,
+skyboxVAO, skyboxEBO;
+
+//Texture vriables:
+Texture rockTexture, spacecraftTexture,craftTexture,planetTexture;
+
+GLuint programID;
+
+//Parameters for spacecraft:
+float spftPosX = 0.0f,
+	spftPosY = 0.5f,
+	spftPosZ = -5.0f,
+	camera_offset = -1.0f;   
+vec3 targetDirection = vec3(0.0f, 0.0f, -1.0f);
+
+
+//Scale factor: control the size of all object
+float scaleFactor = 0.3f;
+
+//--------------------------------------------------End-------------------------------------------
+
+
+
+
+
+
+// struct for storing the obj file
+struct Vertex {
+	glm::vec3 position;
+	glm::vec2 uv;
+	glm::vec3 normal;
+};
 
 struct Model {
-    std::vector<Vertex> vertices;
-    std::vector<unsigned int> indices;
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
 };
+
+
+Model Planet, Rock, Spacecraft,Craft;
+
 
 
 Model loadOBJ(const char* objPath)
 {
-    // function to load the obj file
-    // Note: this simple function cannot load all obj files.
+	// function to load the obj file
+	// Note: this simple function cannot load all obj files.
 
-    struct V {
-        // struct for identify if a vertex has showed up
-        unsigned int index_position, index_uv, index_normal;
-        bool operator == (const V& v) const {
-            return index_position == v.index_position && index_uv == v.index_uv && index_normal == v.index_normal;
-        }
-        bool operator < (const V& v) const {
-            return (index_position < v.index_position) ||
-                (index_position == v.index_position && index_uv < v.index_uv) ||
-                (index_position == v.index_position && index_uv == v.index_uv && index_normal < v.index_normal);
-        }
-    };
+	struct V {
+		// struct for identify if a vertex has showed up
+		unsigned int index_position, index_uv, index_normal;
+		bool operator == (const V& v) const {
+			return index_position == v.index_position && index_uv == v.index_uv && index_normal == v.index_normal;
+		}
+		bool operator < (const V& v) const {
+			return (index_position < v.index_position) ||
+				(index_position == v.index_position && index_uv < v.index_uv) ||
+				(index_position == v.index_position && index_uv == v.index_uv && index_normal < v.index_normal);
+		}
+	};
 
-    std::vector<glm::vec3> temp_positions;
-    std::vector<glm::vec2> temp_uvs;
-    std::vector<glm::vec3> temp_normals;
+	std::vector<glm::vec3> temp_positions;
+	std::vector<glm::vec2> temp_uvs;
+	std::vector<glm::vec3> temp_normals;
 
-    std::map<V, unsigned int> temp_vertices;
+	std::map<V, unsigned int> temp_vertices;
 
-    Model model;
-    unsigned int num_vertices = 0;
+	Model model;
+	unsigned int num_vertices = 0;
 
-    std::cout << "\nLoading OBJ file " << objPath << "..." << std::endl;
+	std::cout << "\nLoading OBJ file " << objPath << "..." << std::endl;
 
-    std::ifstream file;
-    file.open(objPath);
+	std::ifstream file;
+	file.open(objPath);
 
-    // Check for Error
-    if (file.fail()) {
-        std::cerr << "Impossible to open the file! Do you use the right path? See Tutorial 6 for details" << std::endl;
-        exit(1);
-    }
+	// Check for Error
+	if (file.fail()) {
+		std::cerr << "Impossible to open the file! Do you use the right path? See Tutorial 6 for details" << std::endl;
+		exit(1);
+	}
 
-    while (!file.eof()) {
-        // process the object file
-        char lineHeader[128];
-        file >> lineHeader;
+	while (!file.eof()) {
+		// process the object file
+		char lineHeader[128];
+		file >> lineHeader;
 
-        if (strcmp(lineHeader, "v") == 0) {
-            // geometric vertices
-            glm::vec3 position;
-            file >> position.x >> position.y >> position.z;
-            temp_positions.push_back(position);
-        }
-        else if (strcmp(lineHeader, "vt") == 0) {
-            // texture coordinates
-            glm::vec2 uv;
-            file >> uv.x >> uv.y;
-            temp_uvs.push_back(uv);
-        }
-        else if (strcmp(lineHeader, "vn") == 0) {
-            // vertex normals
-            glm::vec3 normal;
-            file >> normal.x >> normal.y >> normal.z;
-            temp_normals.push_back(normal);
-        }
-        else if (strcmp(lineHeader, "f") == 0) {
-            // Face elements
-            V vertices[3];
-            for (int i = 0; i < 3; i++) {
-                char ch;
-                file >> vertices[i].index_position >> ch >> vertices[i].index_uv >> ch >> vertices[i].index_normal;
-            }
+		if (strcmp(lineHeader, "v") == 0) {
+			// geometric vertices
+			glm::vec3 position;
+			file >> position.x >> position.y >> position.z;
+			temp_positions.push_back(position);
+		}
+		else if (strcmp(lineHeader, "vt") == 0) {
+			// texture coordinates
+			glm::vec2 uv;
+			file >> uv.x >> uv.y;
+			temp_uvs.push_back(uv);
+		}
+		else if (strcmp(lineHeader, "vn") == 0) {
+			// vertex normals
+			glm::vec3 normal;
+			file >> normal.x >> normal.y >> normal.z;
+			temp_normals.push_back(normal);
+		}
+		else if (strcmp(lineHeader, "f") == 0) {
+			// Face elements
+			V vertices[3];
+			for (int i = 0; i < 3; i++) {
+				char ch;
+				file >> vertices[i].index_position >> ch >> vertices[i].index_uv >> ch >> vertices[i].index_normal;
+			}
 
-            // Check if there are more than three vertices in one face.
-            std::string redundency;
-            std::getline(file, redundency);
-            if (redundency.length() >= 5) {
-                std::cerr << "There may exist some errors while load the obj file. Error content: [" << redundency << " ]" << std::endl;
-                std::cerr << "Please note that we only support the faces drawing with triangles. There are more than three vertices in one face." << std::endl;
-                std::cerr << "Your obj file can't be read properly by our simple parser :-( Try exporting with other options." << std::endl;
-                exit(1);
-            }
+			// Check if there are more than three vertices in one face.
+			std::string redundency;
+			std::getline(file, redundency);
+			if (redundency.length() >= 5) {
+				std::cerr << "There may exist some errors while load the obj file. Error content: [" << redundency << " ]" << std::endl;
+				std::cerr << "Please note that we only support the faces drawing with triangles. There are more than three vertices in one face." << std::endl;
+				std::cerr << "Your obj file can't be read properly by our simple parser :-( Try exporting with other options." << std::endl;
+				exit(1);
+			}
 
-            for (int i = 0; i < 3; i++) {
-                if (temp_vertices.find(vertices[i]) == temp_vertices.end()) {
-                    // the vertex never shows before
-                    Vertex vertex;
-                    vertex.position = temp_positions[vertices[i].index_position - 1];
-                    vertex.uv = temp_uvs[vertices[i].index_uv - 1];
-                    vertex.normal = temp_normals[vertices[i].index_normal - 1];
+			for (int i = 0; i < 3; i++) {
+				if (temp_vertices.find(vertices[i]) == temp_vertices.end()) {
+					// the vertex never shows before
+					Vertex vertex;
+					vertex.position = temp_positions[vertices[i].index_position - 1];
+					vertex.uv = temp_uvs[vertices[i].index_uv - 1];
+					vertex.normal = temp_normals[vertices[i].index_normal - 1];
 
-                    model.vertices.push_back(vertex);
-                    model.indices.push_back(num_vertices);
-                    temp_vertices[vertices[i]] = num_vertices;
-                    num_vertices += 1;
-                }
-                else {
-                    // reuse the existing vertex
-                    unsigned int index = temp_vertices[vertices[i]];
-                    model.indices.push_back(index);
-                }
-            } // for
-        } // else if
-        else {
-            // it's not a vertex, texture coordinate, normal or face
-            char stupidBuffer[1024];
-            file.getline(stupidBuffer, 1024);
-        }
-    }
-    file.close();
+					model.vertices.push_back(vertex);
+					model.indices.push_back(num_vertices);
+					temp_vertices[vertices[i]] = num_vertices;
+					num_vertices += 1;
+				}
+				else {
+					// reuse the existing vertex
+					unsigned int index = temp_vertices[vertices[i]];
+					model.indices.push_back(index);
+				}
+			} // for
+		} // else if
+		else {
+			// it's not a vertex, texture coordinate, normal or face
+			char stupidBuffer[1024];
+			file.getline(stupidBuffer, 1024);
+		}
+	}
+	file.close();
 
-    std::cout << "There are " << num_vertices << " vertices in the obj file.\n" << std::endl;
-    return model;
+	std::cout << "There are " << num_vertices << " vertices in the obj file.\n" << std::endl;
+	return model;
 }
-
-
 GLuint loadCubemap(std::vector<const GLchar*> faces)
 {
-    int width, height, BPP;
-    unsigned char* image;
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-    for (GLuint i = 0; i < faces.size(); i++)
-    {
-        // tell stb_image.h to flip loaded texture's on the y-axis.
-        stbi_set_flip_vertically_on_load(true);
-        // load the texture data into "data"
-        image = stbi_load(faces[i], &width, &height, &BPP, 0);
-        if (image)
-        {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height,
-                0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            stbi_image_free(image);
-        }
-        else
-        {
-            std::cout << "Failed to load cubemap texture" << std::endl;
-            stbi_image_free(image);
-        }
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	int width, height, BPP;
+	unsigned char* image;
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+	for (GLuint i = 0; i < faces.size(); i++)
+	{
+		// tell stb_image.h to flip loaded texture's on the y-axis.
+		stbi_set_flip_vertically_on_load(true);
+		// load the texture data into "data"
+		image = stbi_load(faces[i], &width, &height, &BPP, 0);
+		if (image)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height,
+				0, GL_RGB, GL_UNSIGNED_BYTE, image);
+			stbi_image_free(image);
+		}
+		else
+		{
+			std::cout << "Failed to load cubemap texture" << std::endl;
+			stbi_image_free(image);
+		}
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
-    return textureID;
+	return textureID;
+}
+void get_OpenGL_info()
+{
+	// OpenGL information
+	const GLubyte* name = glGetString(GL_VENDOR);
+	const GLubyte* renderer = glGetString(GL_RENDERER);
+	const GLubyte* glversion = glGetString(GL_VERSION);
+	std::cout << "OpenGL company: " << name << std::endl;
+	std::cout << "Renderer name: " << renderer << std::endl;
+	std::cout << "OpenGL version: " << glversion << std::endl;
+}
+
+void sendDataToOpenGL()
+{
+	struct Path paths;
+	GLuint VBO;
+	//Load Planet:
+	Planet = loadOBJ(paths.planet);
+	planetTexture.setupTexture(paths.planet_image_texture);
+	glGenVertexArrays(1, &planetVAO);
+	glBindVertexArray(planetVAO);
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, Planet.vertices.size() * sizeof(Vertex), &Planet.vertices[0], GL_STATIC_DRAW);
+	glGenBuffers(1, &planetEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, planetEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Planet.indices.size() * sizeof(unsigned int), &Planet.indices[0], GL_STATIC_DRAW);
+
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	//Load Spacecraft:
+	Spacecraft = loadOBJ(paths.spacecraft);
+	spacecraftTexture.setupTexture(paths.spacecraft_texutre);
+	glGenVertexArrays(1, &spacecraftVAO);
+	glBindVertexArray(spacecraftVAO);
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, Spacecraft.vertices.size() * sizeof(Vertex), &Spacecraft.vertices[0], GL_STATIC_DRAW);
+	glGenBuffers(1, &spacecraftEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spacecraftEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Spacecraft.indices.size() * sizeof(unsigned int), &Spacecraft.indices[0], GL_STATIC_DRAW);
+
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+
+	//Load Rock:
+	Rock = loadOBJ(paths.rock);
+	rockTexture.setupTexture(paths.rock_texture);
+	glGenVertexArrays(1, &rockVAO);
+	glBindVertexArray(rockVAO);
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, Rock.vertices.size() * sizeof(Vertex), &Rock.vertices[0], GL_STATIC_DRAW);
+	glGenBuffers(1, &rockEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rockEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Rock.indices.size() * sizeof(unsigned int), &Rock.indices[0], GL_STATIC_DRAW);
+
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	//Load Craft:
+	Craft = loadOBJ(paths.craft);
+	craftTexture.setupTexture(paths.ring_texture);
+	glGenVertexArrays(1, &craftVAO);
+	glBindVertexArray(craftVAO);
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, Craft.vertices.size() * sizeof(Vertex), &Craft.vertices[0], GL_STATIC_DRAW);
+	glGenBuffers(1, &craftEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, craftEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Craft.indices.size() * sizeof(unsigned int), &Craft.indices[0], GL_STATIC_DRAW);
+
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+void initializedGL(void) //run only once
+{
+	if (glewInit() != GLEW_OK) {
+		std::cout << "GLEW not OK." << std::endl;
+	}
+
+	get_OpenGL_info();
+	sendDataToOpenGL();
+
+	shader.setupShader("VertexShaderCode.glsl", "FragmentShaderCode.glsl");
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+}
+
+void paintGL(void)  //always run
+{
+	glClearColor(0.0f, 0.0f, 0.0f, 0.5f); //specify the background color, this is just an example
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	shader.use();
+
+	vec3 cameraPosition(spftPosX, spftPosY, spftPosZ+camera_offset);
+
+
+	//Matrices for view transformation:
+	mat4 modelMatrix = mat4(1.0f),
+		viewMatrix = mat4(1.0f),
+		projectionMatrix = mat4(1.0f);
+
+
+	//Initialization of camera view
+	projectionMatrix = perspective(radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 30.0f);
+	viewMatrix = lookAt(cameraPosition,
+		cameraPosition + targetDirection,
+		vec3(0.0f, 1.0f, 0.0f));
+	shader.setMat4("view", viewMatrix);
+	shader.setMat4("projection", projectionMatrix);
+	shader.setVec3("eyePositionWorld", cameraPosition);
+
+	//Initialization of Lighting:
+
+
+
+
+
+	//Send camera information to the shader:
+	shader.setVec3("eyePositionWorld", cameraPosition);
+
+	//Draw Planet:
+	
+}
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	// Sets the mouse-button callback for the current window.	
+}
+
+void cursor_position_callback(GLFWwindow* window, double x, double y)
+{
+	// Sets the cursor position callback for the current window
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	// Sets the scoll callback for the current window.
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	// Sets the Keyboard callback for the current window.
 }
 
 
+int main(int argc, char* argv[])
+{
+	GLFWwindow* window;
 
-int main(int argc, const char * argv[]) {
-    // insert code here...
-    std::cout << "Hello, World!\n";
-    return 0;
+	/* Initialize the glfw */
+	if (!glfwInit()) {
+		std::cout << "Failed to initialize GLFW" << std::endl;
+		return -1;
+	}
+	/* glfw: configure; necessary for MAC */
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+#ifdef __APPLE__
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+	/* Create a windowed mode window and its OpenGL context */
+	window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Assignment 2", NULL, NULL);
+	if (!window) {
+		std::cout << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
+		return -1;
+	}
+
+	/* Make the window's context current */
+	glfwMakeContextCurrent(window);
+
+	/*register callback functions*/
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetKeyCallback(window, key_callback);                                                                  //    
+	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetCursorPosCallback(window, cursor_position_callback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
+
+	initializedGL();
+
+	while (!glfwWindowShouldClose(window)) {
+		/* Render here */
+		paintGL();
+
+		/* Swap front and back buffers */
+		glfwSwapBuffers(window);
+
+		/* Poll for and process events */
+		glfwPollEvents();
+	}
+
+	glfwTerminate();
+
+	return 0;
 }
