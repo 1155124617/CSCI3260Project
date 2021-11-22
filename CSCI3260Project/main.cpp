@@ -24,7 +24,7 @@
 #include <vector>
 #include <map>
 #include <string>
-
+#include <cstdlib>
 
 using namespace std;
 using namespace glm;
@@ -78,20 +78,37 @@ spacecraftVAO, spacecraftEBO,
 skyboxVAO, skyboxEBO;
 
 //Texture vriables:
-Texture rockTexture, spacecraftTexture,craftTexture,planetTexture;
+Texture rockTexture, spacecraftTexture,craftTexture[2],planetTexture;
 
 GLuint programID;
 
 //Parameters for spacecraft:
 float spftPosX = 0.0f,
-	spftPosY = 0.5f,
-	spftPosZ = -5.0f,
-	camera_offset = -1.0f;   
+spftPosY = 0.0f,
+spftPosZ = 8.0f,
+camera_offset_Z = 0.8f,
+camera_offset_Y = 0.3f;
+	
 vec3 targetDirection = vec3(0.0f, 0.0f, -1.0f);
 
+//Parameters for lighting:
+float directionalIntensity = 1.5f;
+ 
+//Parameters for crafts:
+float rotate_speed = 0.5f;
 
+  
+  
+ 
+ 
 //Scale factor: control the size of all object
-float scaleFactor = 0.3f;
+float scaleFactor = 0.1f;
+
+//Boolean values for crafts collision detection (Order from near to far corresponding to the planet
+bool collision_near = false;
+bool collision_middle = false;
+bool collision_far = false;
+
 
 //--------------------------------------------------End-------------------------------------------
 
@@ -352,7 +369,8 @@ void sendDataToOpenGL()
 
 	//Load Craft:
 	Craft = loadOBJ(paths.craft);
-	craftTexture.setupTexture(paths.ring_texture);
+	craftTexture[0].setupTexture(paths.ring_texture);
+	craftTexture[1].setupTexture(paths.red_Texture);
 	glGenVertexArrays(1, &craftVAO);
 	glBindVertexArray(craftVAO);
 	glGenBuffers(1, &VBO);
@@ -395,7 +413,7 @@ void paintGL(void)  //always run
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	shader.use();
 
-	vec3 cameraPosition(spftPosX, spftPosY, spftPosZ+camera_offset);
+	vec3 cameraPosition(spftPosX, spftPosY+camera_offset_Y, spftPosZ+camera_offset_Z);
 
 
 	//Matrices for view transformation:
@@ -405,7 +423,7 @@ void paintGL(void)  //always run
 
 
 	//Initialization of camera view
-	projectionMatrix = perspective(radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 30.0f);
+	projectionMatrix = perspective(radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 50.0f);
 	viewMatrix = lookAt(cameraPosition,
 		cameraPosition + targetDirection,
 		vec3(0.0f, 1.0f, 0.0f));
@@ -414,7 +432,13 @@ void paintGL(void)  //always run
 	shader.setVec3("eyePositionWorld", cameraPosition);
 
 	//Initialization of Lighting:
-
+	
+	//Directional Light:
+	shader.setFloat("dirLight.intensity", directionalIntensity);
+	shader.setVec3("dirLight.direction", vec3(-1.0f, -1.0f, -1.0f));
+	shader.setVec3("dirLight.ambient", vec3(0.2f, 0.2f, 0.2f));
+	shader.setVec3("dirLight.diffuse", vec3(0.4f, 0.4f, 0.4f));
+	shader.setVec3("dirLight.specular", vec3(0.5f, 0.5f, 0.5f));
 
 
 
@@ -423,7 +447,39 @@ void paintGL(void)  //always run
 	shader.setVec3("eyePositionWorld", cameraPosition);
 
 	//Draw Planet:
-	
+	modelMatrix = mat4(1.0f);
+	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 1.5f, scaleFactor * 1.5f, scaleFactor * 1.5f));
+	modelMatrix = rotate(modelMatrix, (float)glfwGetTime(), vec3(0.0f, 1.0f, 0.0f));
+	shader.setMat4("model", modelMatrix);
+	planetTexture.bind(0);
+	shader.setInt("texureSampler0", 0);
+	glBindVertexArray(planetVAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,planetEBO);
+	glDrawElements(GL_TRIANGLES, Planet.indices.size(), GL_UNSIGNED_INT, 0);
+
+	//Draw Spacecraft:
+	modelMatrix = mat4(1.0f);
+	modelMatrix = translate(modelMatrix, vec3(spftPosX, spftPosY, spftPosZ));
+	modelMatrix = rotate(modelMatrix, (float)radians(180.0), vec3(0.0, 1.0, 0.0));
+	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.005, scaleFactor * 0.005, scaleFactor * 0.005));
+	shader.setMat4("model", modelMatrix);
+	spacecraftTexture.bind(0);
+	shader.setInt("texureSampler0", 0);
+	glBindVertexArray(spacecraftVAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spacecraftEBO);
+	glDrawElements(GL_TRIANGLES, Spacecraft.indices.size(), GL_UNSIGNED_INT, 0);
+
+	//Draw Local Crafts:
+	modelMatrix = mat4(1.0f);
+	modelMatrix = rotate(modelMatrix, rotate_speed*(float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
+	modelMatrix = translate(modelMatrix, vec3(spftPosX, spftPosY, 2.0f));
+	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
+	shader.setMat4("model", modelMatrix);
+	craftTexture[collision_near].bind(0);
+	shader.setInt("texureSampler0", 0);
+	glBindVertexArray(craftVAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, craftEBO);
+	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
