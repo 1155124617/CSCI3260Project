@@ -1,5 +1,5 @@
-#version 430
-
+#version 330
+// #version 430
 
 struct DirLight{
 	vec3 direction;

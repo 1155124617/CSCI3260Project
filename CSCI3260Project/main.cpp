@@ -9,11 +9,15 @@
 // SID     2: 1155141656
 //
 
-#include "Dependencies/glew/glew.h"
+/*#include "Dependencies/glew/glew.h"
 #include "Dependencies/GLFW/glfw3.h"
 #include "Dependencies/glm/glm.hpp"
+#include "Dependencies/glm/gtc/matrix_transform.hpp"*/
+#include "GL/glew.h"
+#include "GLFW/glfw3.h"
+#include "glm/glm.hpp"
 #include "Dependencies/stb_image/stb_image.h"
-#include "Dependencies/glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 #include "Shader.h"
 #include "Texture.h"
@@ -63,10 +67,26 @@ struct Path{
 	const char* skybox_bottom= "./Resources/texture/skybox textures/bottom.bmp";
 };
 
+struct SpaceCraftMovement {
+    bool up_pressed = false;
+    bool down_pressed = false;
+    bool left_pressed = false;
+    bool right_pressed = false;
+    float speed = 0.1;
+};
+
 
 //Structure Variables:
 Shader shader;
 Path path;
+SpaceCraftMovement spmv;
+
+// Control cursor movement
+bool firstMouse = true;
+float yaw   = -90.0f,
+pitch =  0.0f,
+lastX =  800.0f / 2.0,
+lastY =  600.0 / 2.0;
 
 
 //VAO & EBO values for the models:
@@ -413,7 +433,31 @@ void paintGL(void)  //always run
 	glClearColor(0.0f, 0.0f, 0.0f, 0.5f); //specify the background color, this is just an example
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	shader.use();
-
+    
+    if (spmv.up_pressed) {
+        spftPosX += spmv.speed * targetDirection.x;
+        spftPosY += spmv.speed * targetDirection.y;
+        spftPosZ += spmv.speed * targetDirection.z;
+    }
+    if (spmv.down_pressed) {
+        spftPosX -= spmv.speed * targetDirection.x;
+        spftPosY -= spmv.speed * targetDirection.y;
+        spftPosZ -= spmv.speed * targetDirection.z;
+    }
+    if (spmv.left_pressed) {
+        vec3 rightvec = glm::normalize(glm::cross(targetDirection, vec3(0.0f,1.0f,0.0f)));
+        spftPosX -= spmv.speed * rightvec.x;
+        spftPosY -= spmv.speed * rightvec.y;
+        spftPosZ -= spmv.speed * rightvec.z;
+    }
+    if (spmv.right_pressed) {
+        vec3 rightvec = glm::normalize(glm::cross(targetDirection, vec3(0.0f,1.0f,0.0f)));
+        spftPosX += spmv.speed * rightvec.x;
+        spftPosY += spmv.speed * rightvec.y;
+        spftPosZ += spmv.speed * rightvec.z;
+    }
+    
+    
 	vec3 cameraPosition(spftPosX, spftPosY+camera_offset_Y, spftPosZ+camera_offset_Z);
 
 
@@ -461,7 +505,12 @@ void paintGL(void)  //always run
 
 	//Draw Spacecraft:
 	modelMatrix = mat4(1.0f);
-	modelMatrix = translate(modelMatrix, vec3(spftPosX, spftPosY, spftPosZ));
+	modelMatrix = translate(modelMatrix, cameraPosition);
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(-yaw-90),
+        glm::vec3(0.0f, 1.0f, 0.0f));
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(pitch),
+        glm::vec3(1.0f, 0.0f, 0.0f));
+    modelMatrix = translate(modelMatrix, vec3(0.0f, -camera_offset_Y, -camera_offset_Z));
 	modelMatrix = rotate(modelMatrix, (float)radians(180.0), vec3(0.0, 1.0, 0.0));
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.002, scaleFactor * 0.002, scaleFactor * 0.002));
 	shader.setMat4("model", modelMatrix);
@@ -474,7 +523,7 @@ void paintGL(void)  //always run
 	//Draw Local Crafts:
 	modelMatrix = mat4(1.0f);
 	modelMatrix = rotate(modelMatrix, rotate_speed*(float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
-	modelMatrix = translate(modelMatrix, vec3(spftPosX, spftPosY, 2.0f));
+	modelMatrix = translate(modelMatrix, vec3(0.0f, -0.1f, 2.0f));
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
 	shader.setMat4("model", modelMatrix);
 	craftTexture[collision_near].bind(0);
@@ -494,9 +543,39 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	// Sets the mouse-button callback for the current window.	
 }
 
-void cursor_position_callback(GLFWwindow* window, double x, double y)
+void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	// Sets the cursor position callback for the current window
+    // Sets the cursor position callback for the current window
+    // This function is referred to learnopenGL website. (DING Baizeng)
+    if(firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    float sensitivity = 0.10;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+
+    yaw   += xoffset;
+    pitch += yoffset;
+
+    if(pitch > 89.0f)
+        pitch = 89.0f;
+    if(pitch < -89.0f)
+        pitch = -89.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    front.y = sin(glm::radians(pitch));
+    front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    targetDirection = glm::normalize(front);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -507,6 +586,30 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	// Sets the Keyboard callback for the current window.
+    if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
+        spmv.up_pressed = true;
+    }
+    if (key == GLFW_KEY_UP && action == GLFW_RELEASE) {
+        spmv.up_pressed = false;
+    }
+    if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
+        spmv.down_pressed = true;
+    }
+    if (key == GLFW_KEY_DOWN && action == GLFW_RELEASE) {
+        spmv.down_pressed = false;
+    }
+    if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+        spmv.left_pressed = true;
+    }
+    if (key == GLFW_KEY_LEFT && action == GLFW_RELEASE) {
+        spmv.left_pressed = false;
+    }
+    if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+        spmv.right_pressed = true;
+    }
+    if (key == GLFW_KEY_RIGHT && action == GLFW_RELEASE) {
+        spmv.right_pressed = false;
+    }
 }
 
 
@@ -520,7 +623,8 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	/* glfw: configure; necessary for MAC */
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	// glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -540,6 +644,7 @@ int main(int argc, char* argv[])
 	glfwMakeContextCurrent(window);
 
 	/*register callback functions*/
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetKeyCallback(window, key_callback);                                                                  //    
 	glfwSetScrollCallback(window, scroll_callback);

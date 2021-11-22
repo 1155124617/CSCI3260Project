@@ -1,8 +1,12 @@
-
-#version 430
+// #version 430
+#version 330
+layout(location=0) in vec3 position;
+layout(location=1) in vec2 uv;
+layout(location=2) in vec3 normal;
+/*
 in layout(location=0) vec3 position;
 in layout(location=1) vec2 uv;
-in layout(location=2) vec3 normal;
+in layout(location=2) vec3 normal;*/
 
 uniform mat4 model;
 uniform mat4 view;
