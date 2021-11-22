@@ -191,16 +191,19 @@ Model loadOBJ(const char* objPath)
 		std::cerr << "Impossible to open the file! Do you use the right path? See Tutorial 6 for details" << std::endl;
 		exit(1);
 	}
+    float max_y = -1.0f;
+    float min_y = 1.0f;
 
 	while (!file.eof()) {
 		// process the object file
 		char lineHeader[128];
 		file >> lineHeader;
-
 		if (strcmp(lineHeader, "v") == 0) {
 			// geometric vertices
 			glm::vec3 position;
 			file >> position.x >> position.y >> position.z;
+            if (position.y > max_y) max_y = position.y;
+            if (position.y < min_y) min_y = position.y;
 			temp_positions.push_back(position);
 		}
 		else if (strcmp(lineHeader, "vt") == 0) {
@@ -259,6 +262,8 @@ Model loadOBJ(const char* objPath)
 			file.getline(stupidBuffer, 1024);
 		}
 	}
+    std::cout << "max_y" << max_y << "min_y" << min_y <<std::endl;
+    std::cout << "should move " << -(max_y+min_y)/2  << std::endl;
 	file.close();
 
 	std::cout << "There are " << num_vertices << " vertices in the obj file.\n" << std::endl;
@@ -496,6 +501,7 @@ void paintGL(void)  //always run
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 1.5f, scaleFactor * 1.5f, scaleFactor * 1.5f));
 	modelMatrix = rotate(modelMatrix, (float)glfwGetTime(), vec3(0.0f, 1.0f, 0.0f));
 	modelMatrix = rotate(modelMatrix, (float)radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
+    modelMatrix = translate(modelMatrix, vec3(0.0f, -1.04894f, 0.0f));
 	shader.setMat4("model", modelMatrix);
 	planetTexture.bind(0);
 	shader.setInt("texureSampler0", 0);
