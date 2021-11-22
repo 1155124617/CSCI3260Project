@@ -9,7 +9,6 @@
 // SID     2: 1155141656
 //
 
-
 #include "Dependencies/glew/glew.h"
 #include "Dependencies/GLFW/glfw3.h"
 #include "Dependencies/glm/glm.hpp"
@@ -78,16 +77,17 @@ spacecraftVAO, spacecraftEBO,
 skyboxVAO, skyboxEBO;
 
 //Texture vriables:
-Texture rockTexture, spacecraftTexture,craftTexture[2],planetTexture;
+Texture rockTexture, spacecraftTexture[2],craftTexture[2],planetTexture;
 
 GLuint programID;
 
 //Parameters for spacecraft:
 float spftPosX = 0.0f,
-spftPosY = 0.0f,
-spftPosZ = 8.0f,
-camera_offset_Z = 0.8f,
+spftPosY = -0.1f,
+spftPosZ = 10.0f,
+camera_offset_Z = 0.85f,
 camera_offset_Y = 0.3f;
+bool goldCollected = false;
 	
 vec3 targetDirection = vec3(0.0f, 0.0f, -1.0f);
 
@@ -102,7 +102,7 @@ float rotate_speed = 0.5f;
  
  
 //Scale factor: control the size of all object
-float scaleFactor = 0.1f;
+float scaleFactor = 0.2f;
 
 //Boolean values for crafts collision detection (Order from near to far corresponding to the planet
 bool collision_near = false;
@@ -320,7 +320,8 @@ void sendDataToOpenGL()
 
 	//Load Spacecraft:
 	Spacecraft = loadOBJ(paths.spacecraft);
-	spacecraftTexture.setupTexture(paths.spacecraft_texutre);
+	spacecraftTexture[0].setupTexture(paths.spacecraft_texutre);
+	spacecraftTexture[1].setupTexture(paths.gold_texture);
 	glGenVertexArrays(1, &spacecraftVAO);
 	glBindVertexArray(spacecraftVAO);
 	glGenBuffers(1, &VBO);
@@ -450,6 +451,7 @@ void paintGL(void)  //always run
 	modelMatrix = mat4(1.0f);
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 1.5f, scaleFactor * 1.5f, scaleFactor * 1.5f));
 	modelMatrix = rotate(modelMatrix, (float)glfwGetTime(), vec3(0.0f, 1.0f, 0.0f));
+	modelMatrix = rotate(modelMatrix, (float)radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
 	shader.setMat4("model", modelMatrix);
 	planetTexture.bind(0);
 	shader.setInt("texureSampler0", 0);
@@ -461,9 +463,9 @@ void paintGL(void)  //always run
 	modelMatrix = mat4(1.0f);
 	modelMatrix = translate(modelMatrix, vec3(spftPosX, spftPosY, spftPosZ));
 	modelMatrix = rotate(modelMatrix, (float)radians(180.0), vec3(0.0, 1.0, 0.0));
-	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.005, scaleFactor * 0.005, scaleFactor * 0.005));
+	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.002, scaleFactor * 0.002, scaleFactor * 0.002));
 	shader.setMat4("model", modelMatrix);
-	spacecraftTexture.bind(0);
+	spacecraftTexture[goldCollected].bind(0);
 	shader.setInt("texureSampler0", 0);
 	glBindVertexArray(spacecraftVAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spacecraftEBO);
@@ -561,3 +563,4 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
+
