@@ -73,6 +73,10 @@ struct Path {
 	//Files for rocket
 	const char* rocket = "./Resources/object/rocket.obj";
 	const char* rocket_texture = "./Resources/texture/rocket.png";
+	
+	////Files for coin
+	const char* coin = "./Resources/object/coin.obj";
+	const char* coin_texture = "./Resources/texture/Coin.png";
 };
 
 struct SpaceCraftMovement {
@@ -133,10 +137,11 @@ craftVAO, craftEBO,
 rockVAO, rockEBO,
 spacecraftVAO, spacecraftEBO,
 skyboxVAO, skyboxEBO,
-rocketVAO, rocketEBO;
+rocketVAO, rocketEBO,
+coinVAO,coinEBO;
 
 //Texture vriables:
-Texture rockTexture[2], spacecraftTexture[2], craftTexture[2], planetTexture, rocketTexture;
+Texture rockTexture[2], spacecraftTexture[2], craftTexture[2], planetTexture, rocketTexture,coinTexture;
 GLuint cubemapTexture;
 
 GLuint programID;
@@ -187,7 +192,10 @@ bool collision_horizontal_far = false;
 float holdTime[3];
 float lastTime[3];
 float horizontal_offset[3];
-
+bool speedMode = false;
+bool speedModeOn = false;
+bool directionLightOn = true;
+bool pointLightOn = true;
 //--------------------------------------------------End-------------------------------------------
 
 
@@ -208,7 +216,7 @@ struct Model {
 };
 
 
-Model Planet, Rock, Spacecraft, Craft, Rocket;
+Model Planet, Rock, Spacecraft, Craft, Rocket,Coin;
 
 
 void decidePosition(struct RockRing* rockRing);
@@ -581,6 +589,30 @@ void sendDataToOpenGL()
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	
+	//Load Coin:
+	Coin = loadOBJ(paths.coin);
+	coinTexture.setupTexture(paths.coin_texture);
+	glGenVertexArrays(1, &coinVAO);
+	glBindVertexArray(coinVAO);
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, Coin.vertices.size() * sizeof(Vertex), &Coin.vertices[0], GL_STATIC_DRAW);
+	glGenBuffers(1, &coinEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coinEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Coin.indices.size() * sizeof(unsigned int), &Coin.indices[0], GL_STATIC_DRAW);
+
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void initializedGL(void) //run only once
@@ -607,7 +639,8 @@ void paintGL(void)  //always run
 	mat4 modelMatrix = mat4(1.0f),
 		viewMatrix = mat4(1.0f),
 		projectionMatrix = mat4(1.0f);
-
+	if (speedModeOn==true)
+		spmv.speed = 0.4f;
 	if (spmv.up_pressed) {
 		spftPosX += spmv.speed * targetDirection.x;
 		spftPosY += spmv.speed * targetDirection.y;
@@ -668,6 +701,10 @@ void paintGL(void)  //always run
 	//Initialization of Lighting:
 
 	//Directional Light:
+	if (directionLightOn)
+		directionalIntensity = 0.4f;
+	else
+		directionalIntensity = 0.0f;
 	shader.setFloat("dirLight.intensity", directionalIntensity);
 	shader.setVec3("dirLight.direction", vec3(-1.0f, -1.0f, -1.0f));
 	shader.setVec3("dirLight.ambient", vec3(0.2f, 0.2f, 0.2f));
@@ -682,6 +719,10 @@ void paintGL(void)  //always run
 	shader.setFloat("pointLight.constant", pointLightConstant);
 	shader.setFloat("pointLight.linear", pointLightLinear);
 	shader.setFloat("pointLight.quadratic", pointLightQudratic);
+	if (pointLightOn)
+		pointLightIntensity = 1.0f;
+	else
+		pointLightIntensity = 0.0f;
 	shader.setFloat("pointLight.intensity", pointLightIntensity);
 
 	//Send camera information to the shader:
@@ -853,7 +894,7 @@ void paintGL(void)  //always run
 		lastTime[2] = glfwGetTime();
 	}
 	modelMatrix = mat4(1.0f);
-	modelMatrix = translate(modelMatrix, vec3(-6.0f + horizontal_offset[2], -0.1f, 11.0f));
+	modelMatrix = translate(modelMatrix, vec3(-6.0f + horizontal_offset[2], -0.1f, 14.0f));
 	modelMatrix = rotate(modelMatrix, 0.5f * (float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
 	shader.setMat4("model", modelMatrix);
@@ -897,7 +938,26 @@ void paintGL(void)  //always run
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rockEBO);
 		glDrawElements(GL_TRIANGLES, Rock.indices.size(), GL_UNSIGNED_INT, 0);
 	}
-
+	//Draw Coin:
+	modelMatrix = mat4(1.0f);
+	modelMatrix = translate(modelMatrix, vec3(-10.0f, -0.1f, 18.0f));
+	modelMatrix = rotate(modelMatrix, 0.5f * (float)glfwGetTime(), vec3(1.0, 0.0, 1.0));
+	modelMatrix = scale(modelMatrix, vec3(scaleFactor*18.0, scaleFactor * 18.0, scaleFactor * 18.0));
+	shader.setMat4("model", modelMatrix);
+	glBindVertexArray(coinVAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, coinEBO);
+	// Regard the central point as the object position
+	loft_vec = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	if (collision_detection(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1&&speedMode!=true) {
+		cout << "Coin collected! Speed mode unlocked!" << endl;
+		speedMode = true;
+	}
+	if(!speedMode){
+		coinTexture.bind(0);
+		shader.setInt("texureSampler0", 0);
+		glDrawElements(GL_TRIANGLES, Coin.indices.size(), GL_UNSIGNED_INT, 0);
+	}
+	
 	//Draw Rocket:
 	for (int i = 0; i < 2; i++) {
 		modelMatrix = mat4(1.0f);
@@ -1053,6 +1113,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS && speedMode == true) {
+		speedModeOn = speedModeOn ^ true;
+	}
+	if (key == GLFW_KEY_I && action == GLFW_PRESS)
+		directionLightOn = directionLightOn ^ true;
+	if (key == GLFW_KEY_O && action == GLFW_PRESS)
+		pointLightOn = pointLightOn ^ true;
 	if (key == GLFW_KEY_F && action == GLFW_PRESS) {
 		if (rockets_loaded == 0) return;
 		rockets_loaded -= 1;
