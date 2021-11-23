@@ -9,17 +9,17 @@
 // SID     2: 1155141656
 //
 
-/*#include "Dependencies/glew/glew.h"
+#include "Dependencies/glew/glew.h"
 #include "Dependencies/GLFW/glfw3.h"
 #include "Dependencies/glm/glm.hpp"
 #include "Dependencies/glm/gtc/matrix_transform.hpp"
-#include "Dependencies/stb_image/stb_image.h"*/
+#include "Dependencies/stb_image/stb_image.h"
 
-#include "GL/glew.h"
+/*#include "GL/glew.h"
 #include "GLFW/glfw3.h"
 #include "glm/glm.hpp"
 #include "Dependencies/stb_image/stb_image.h"
-#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/matrix_transform.hpp"*/
 
 #include "Shader.h"
 #include "Texture.h"
@@ -69,10 +69,10 @@ struct Path {
 	const char* skybox_right = "./Resources/texture/skybox textures/right.bmp";
 	const char* skybox_top = "./Resources/texture/skybox textures/top.bmp";
 	const char* skybox_bottom = "./Resources/texture/skybox textures/bottom.bmp";
-    
-    //Files for rocket
-    const char* rocket = "./Resources/object/rocket.obj";
-    const char* rocket_texture = "./Resources/texture/rocket.png";
+
+	//Files for rocket
+	const char* rocket = "./Resources/object/rocket.obj";
+	const char* rocket_texture = "./Resources/texture/rocket.png";
 };
 
 struct SpaceCraftMovement {
@@ -98,15 +98,15 @@ struct RockRing* rockRing = new struct RockRing;
 
 //Structure for rockets
 struct Rocket {
-    vec3 initial_position = vec3(rand()%10-5, 0.0f, rand()%5+5);
-    vec3 fire_direction;
-    glm::mat4 fire_position_matrix;
-    bool fire_first_determine = false;
-    int state = 0;
-    int loaded_position = 0;
-    float timer = 0;
+	vec3 initial_position = vec3(rand() % 10 - 5, 0.0f, rand() % 5 + 5);
+	vec3 fire_direction;
+	glm::mat4 fire_position_matrix;
+	bool fire_first_determine = false;
+	int state = 0;
+	int loaded_position = 0;
+	float timer = 0;
 };
-Rocket rockets[2];
+struct Rocket rockets[2];
 int rockets_loaded = 0;
 bool left_loaded = false;
 bool right_loaded = false;
@@ -551,30 +551,30 @@ void sendDataToOpenGL()
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    
-    //Load Rocket:
-    Rocket = loadOBJ(paths.rocket);
-    rocketTexture.setupTexture(paths.rocket_texture);
-    glGenVertexArrays(1, &rocketVAO);
-    glBindVertexArray(rocketVAO);
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, Rocket.vertices.size() * sizeof(Vertex), &Rocket.vertices[0], GL_STATIC_DRAW);
-    glGenBuffers(1, &rocketEBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rocketEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, Rocket.indices.size() * sizeof(unsigned int), &Rocket.indices[0], GL_STATIC_DRAW);
+
+	//Load Rocket:
+	Rocket = loadOBJ(paths.rocket);
+	rocketTexture.setupTexture(paths.rocket_texture);
+	glGenVertexArrays(1, &rocketVAO);
+	glBindVertexArray(rocketVAO);
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, Rocket.vertices.size() * sizeof(Vertex), &Rocket.vertices[0], GL_STATIC_DRAW);
+	glGenBuffers(1, &rocketEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rocketEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Rocket.indices.size() * sizeof(unsigned int), &Rocket.indices[0], GL_STATIC_DRAW);
 
 
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
 
 
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void initializedGL(void) //run only once
@@ -692,7 +692,7 @@ void paintGL(void)  //always run
 	modelMatrix = rotate(modelMatrix, (float)radians(180.0), vec3(0.0, 1.0, 0.0));
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.0025, scaleFactor * 0.0025, scaleFactor * 0.0025));
 	shader.setMat4("model", modelMatrix);
-	spacecraftTexture[goldCollected==5].bind(0);
+	spacecraftTexture[goldCollected == NUM_GOLD].bind(0);
 	shader.setInt("texureSampler0", 0);
 	glBindVertexArray(spacecraftVAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spacecraftEBO);
@@ -734,8 +734,9 @@ void paintGL(void)  //always run
 	shader.setInt("texureSampler0", 0);
 	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
 
+
 	//Draw Rock Ring:
-	for (int i = 0; i < 400; i++) {
+	for (int i = 0; i < NUM_BLOCK; i++) {
 		float X = cos(rockRing->theta[i]) * rockRing->distance[i];
 		float Z = sin(rockRing->theta[i]) * rockRing->distance[i];
 		modelMatrix = mat4(1.0f);
@@ -743,13 +744,14 @@ void paintGL(void)  //always run
 		modelMatrix = translate(modelMatrix, vec3(X, rockRing->Y[i], Z));
 		modelMatrix = rotate(modelMatrix, (float)radians(glfwGetTime()) * rockRing->selfRotationSpeed, vec3(1.0, 0.0, 1.0));
 		modelMatrix = scale(modelMatrix, vec3(scaleFactor * rockRing->scale[i], scaleFactor * rockRing->scale[i], scaleFactor * rockRing->scale[i]));
-        glm::vec4 rock_vec = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
-        if (rockRing->isGold[i]) {
-            if (collision_detection(spft_vec, vec3(rock_vec), spft_dim, rock_dim) == 1) {
-                rockRing->isGold[i] = false;
-                goldCollected += 1;
-            }
-        }
+		glm::vec4 rock_vec = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		if (rockRing->isGold[i]) {
+			if (collision_detection(spft_vec, vec3(rock_vec), spft_dim, rock_dim) == 1) {
+				rockRing->isGold[i] = false;
+				cout << "Detection!" << endl;
+				goldCollected += 1;
+			}
+		}
 		shader.setMat4("model", modelMatrix);
 		rockTexture[rockRing->isGold[i]].bind(0);
 		shader.setInt("texureSampler0", 0);
@@ -757,81 +759,81 @@ void paintGL(void)  //always run
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rockEBO);
 		glDrawElements(GL_TRIANGLES, Rock.indices.size(), GL_UNSIGNED_INT, 0);
 	}
-    
-    //Draw Rocket:
-    for (int i = 0 ; i < 2 ; i++){
-        modelMatrix = mat4(1.0f);
-        if (rockets[i].state == 0) {
-            modelMatrix = glm::translate(modelMatrix, rockets[i].initial_position);
-            modelMatrix = glm::rotate(modelMatrix, float(glfwGetTime()), vec3(0.0f,1.0f,1.0f));
-            modelMatrix = glm::rotate(modelMatrix, (float)radians(90.0f), vec3(0.0f,0.0f,1.0f));
-        }
-        else if (rockets[i].state == 1) {
-            modelMatrix = glm::translate(modelMatrix, cameraPosition);
-            modelMatrix = glm::rotate(modelMatrix, glm::radians(-yaw - 90),
-                glm::vec3(0.0f, 1.0f, 0.0f));
-            modelMatrix = glm::rotate(modelMatrix, glm::radians(pitch),
-                glm::vec3(1.0f, 0.0f, 0.0f));
-            if (rockets[i].loaded_position == 1)
-                modelMatrix = glm::translate(modelMatrix, vec3(-0.3f,-camera_offset_Y-0.1f, -camera_offset_Z-0.4f));
-            if (rockets[i].loaded_position == 2)
-                modelMatrix = glm::translate(modelMatrix, vec3(0.3f,-camera_offset_Y-0.1f, -camera_offset_Z-0.4f));
-            modelMatrix = glm::rotate(modelMatrix, float(radians(90.0f)), vec3(0.0f,1.0f,0.0f));
-        }
-        else if (rockets[i].state == 2) {
-            if (glfwGetTime() - rockets[i].timer > 2)
-                rockets[i].state = 0;
-            if (rockets[i].fire_first_determine) {
-                glm::mat4 firemodelMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
-                firemodelMatrix = glm::rotate(firemodelMatrix, glm::radians(-yaw - 90),
-                    glm::vec3(0.0f, 1.0f, 0.0f));
-                firemodelMatrix = glm::rotate(firemodelMatrix, glm::radians(pitch),
-                    glm::vec3(1.0f, 0.0f, 0.0f));
-                if (rockets[i].loaded_position == 1)
-                    firemodelMatrix = glm::translate(firemodelMatrix, vec3(-0.3f,-camera_offset_Y-0.1f, -camera_offset_Z-0.4f));
-                if (rockets[i].loaded_position == 2)
-                    firemodelMatrix = glm::translate(firemodelMatrix, vec3(0.3f,-camera_offset_Y-0.1f, -camera_offset_Z-0.4f));
-                firemodelMatrix = glm::rotate(firemodelMatrix, float(radians(90.0f)), vec3(0.0f,1.0f,0.0f));
-                rockets[i].fire_position_matrix = firemodelMatrix;
-                rockets[i].fire_direction = targetDirection;
-                rockets[i].fire_first_determine = false;
-            }
-            modelMatrix = glm::translate(modelMatrix, 0.5f * rockets[i].fire_direction);
-            modelMatrix = modelMatrix * rockets[i].fire_position_matrix;
-            rockets[i].fire_position_matrix = modelMatrix;
-        }
-        modelMatrix = glm::scale(modelMatrix, vec3(scaleFactor * 0.5f, scaleFactor * 0.5f, scaleFactor * 0.5f));
-        glm::vec4 rocket_vec = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
-        if (rockets[i].state == 2 && collision_detection(vec3(loft_vec), vec3(rocket_vec), loft_dim, rocket_dim) == 1) {
-            collision_near = true;
-            last_time = (float)glfwGetTime();
-            rockets[i].state = 0;
-        }
-        if (rockets[i].state == 0 && collision_detection(spft_vec, glm::vec3(rocket_vec), spft_dim, rocket_dim) == 1) {
-            rockets[i].state = 1;
-            rockets_loaded += 1;
-            if (rockets_loaded == 1) {
-                rockets[i].loaded_position = 1;
-                left_loaded = true;
-            }
-            else {
-                if (left_loaded) {
-                    rockets[i].loaded_position = 2;
-                    right_loaded = true;
-                }
-                else {
-                    rockets[i].loaded_position = 1;
-                    left_loaded = true;
-                }
-            }
-        }
-        shader.setMat4("model", modelMatrix);
-        rocketTexture.bind(0);
-        shader.setInt("texureSampler0", 0);
-        glBindVertexArray(rocketVAO);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rocketEBO);
-        glDrawElements(GL_TRIANGLES, Rocket.indices.size(), GL_UNSIGNED_INT, 0);
-    }
+
+	//Draw Rocket:
+	for (int i = 0; i < 2; i++) {
+		modelMatrix = mat4(1.0f);
+		if (rockets[i].state == 0) {
+			modelMatrix = glm::translate(modelMatrix, rockets[i].initial_position);
+			modelMatrix = glm::rotate(modelMatrix, float(glfwGetTime()), vec3(0.0f, 1.0f, 1.0f));
+			modelMatrix = glm::rotate(modelMatrix, (float)radians(90.0f), vec3(0.0f, 0.0f, 1.0f));
+		}
+		else if (rockets[i].state == 1) {
+			modelMatrix = glm::translate(modelMatrix, cameraPosition);
+			modelMatrix = glm::rotate(modelMatrix, glm::radians(-yaw - 90),
+				glm::vec3(0.0f, 1.0f, 0.0f));
+			modelMatrix = glm::rotate(modelMatrix, glm::radians(pitch),
+				glm::vec3(1.0f, 0.0f, 0.0f));
+			if (rockets[i].loaded_position == 1)
+				modelMatrix = glm::translate(modelMatrix, vec3(-0.3f, -camera_offset_Y - 0.1f, -camera_offset_Z - 0.4f));
+			if (rockets[i].loaded_position == 2)
+				modelMatrix = glm::translate(modelMatrix, vec3(0.3f, -camera_offset_Y - 0.1f, -camera_offset_Z - 0.4f));
+			modelMatrix = glm::rotate(modelMatrix, float(radians(90.0f)), vec3(0.0f, 1.0f, 0.0f));
+		}
+		else if (rockets[i].state == 2) {
+			if (glfwGetTime() - rockets[i].timer > 2)
+				rockets[i].state = 0;
+			if (rockets[i].fire_first_determine) {
+				glm::mat4 firemodelMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
+				firemodelMatrix = glm::rotate(firemodelMatrix, glm::radians(-yaw - 90),
+					glm::vec3(0.0f, 1.0f, 0.0f));
+				firemodelMatrix = glm::rotate(firemodelMatrix, glm::radians(pitch),
+					glm::vec3(1.0f, 0.0f, 0.0f));
+				if (rockets[i].loaded_position == 1)
+					firemodelMatrix = glm::translate(firemodelMatrix, vec3(-0.3f, -camera_offset_Y - 0.1f, -camera_offset_Z - 0.4f));
+				if (rockets[i].loaded_position == 2)
+					firemodelMatrix = glm::translate(firemodelMatrix, vec3(0.3f, -camera_offset_Y - 0.1f, -camera_offset_Z - 0.4f));
+				firemodelMatrix = glm::rotate(firemodelMatrix, float(radians(90.0f)), vec3(0.0f, 1.0f, 0.0f));
+				rockets[i].fire_position_matrix = firemodelMatrix;
+				rockets[i].fire_direction = targetDirection;
+				rockets[i].fire_first_determine = false;
+			}
+			modelMatrix = glm::translate(modelMatrix, 0.5f * rockets[i].fire_direction);
+			modelMatrix = modelMatrix * rockets[i].fire_position_matrix;
+			rockets[i].fire_position_matrix = modelMatrix;
+		}
+		modelMatrix = glm::scale(modelMatrix, vec3(scaleFactor * 0.5f, scaleFactor * 0.5f, scaleFactor * 0.5f));
+		glm::vec4 rocket_vec = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+		if (rockets[i].state == 2 && collision_detection(vec3(loft_vec), vec3(rocket_vec), loft_dim, rocket_dim) == 1) {
+			collision_near = true;
+			last_time = (float)glfwGetTime();
+			rockets[i].state = 0;
+		}
+		if (rockets[i].state == 0 && collision_detection(spft_vec, glm::vec3(rocket_vec), spft_dim, rocket_dim) == 1) {
+			rockets[i].state = 1;
+			rockets_loaded += 1;
+			if (rockets_loaded == 1) {
+				rockets[i].loaded_position = 1;
+				left_loaded = true;
+			}
+			else {
+				if (left_loaded) {
+					rockets[i].loaded_position = 2;
+					right_loaded = true;
+				}
+				else {
+					rockets[i].loaded_position = 1;
+					left_loaded = true;
+				}
+			}
+		}
+		shader.setMat4("model", modelMatrix);
+		rocketTexture.bind(0);
+		shader.setInt("texureSampler0", 0);
+		glBindVertexArray(rocketVAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rocketEBO);
+		glDrawElements(GL_TRIANGLES, Rocket.indices.size(), GL_UNSIGNED_INT, 0);
+	}
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -913,32 +915,32 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
-    if (key == GLFW_KEY_F && action == GLFW_PRESS) {
-        if (rockets_loaded == 0) return;
-        rockets_loaded -= 1;
-        if (rockets_loaded == 1) {
-            for (int i = 0 ; i < 2 ; i++) {
-                if (rockets[i].state == 1 && rockets[i].loaded_position == 1) {
-                    rockets[i].state = 2;
-                    rockets[i].fire_first_determine = true;
-                    rockets[i].timer = glfwGetTime();
-                    left_loaded = false;
-                }
-            }
-        }
-        else {
-            for (int i = 0 ; i < 2 ; i++) {
-                if (rockets[i].state == 1) {
-                    rockets[i].state = 2;
-                    rockets[i].fire_first_determine = true;
-                    rockets[i].timer = glfwGetTime();
-                    left_loaded = false;
-                    right_loaded = false;
-                    break;
-                }
-            }
-        }
-    }
+	if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+		if (rockets_loaded == 0) return;
+		rockets_loaded -= 1;
+		if (rockets_loaded == 1) {
+			for (int i = 0; i < 2; i++) {
+				if (rockets[i].state == 1 && rockets[i].loaded_position == 1) {
+					rockets[i].state = 2;
+					rockets[i].fire_first_determine = true;
+					rockets[i].timer = glfwGetTime();
+					left_loaded = false;
+				}
+			}
+		}
+		else {
+			for (int i = 0; i < 2; i++) {
+				if (rockets[i].state == 1) {
+					rockets[i].state = 2;
+					rockets[i].fire_first_determine = true;
+					rockets[i].timer = glfwGetTime();
+					left_loaded = false;
+					right_loaded = false;
+					break;
+				}
+			}
+		}
+	}
 }
 
 
@@ -1008,12 +1010,13 @@ void decidePosition(struct RockRing* rockRing) {
 	uniform_real_distribution<> distr(0.0f, 360.0f);
 	uniform_real_distribution<> dista(4.0f, 5.5f);
 	uniform_real_distribution<> disty(-0.3f, 0.3f);
+	cout << rockRing->currentNumber<<endl;
 	for (int i = 0; i < NUM_BLOCK; i++) {
-		if (rockRing->currentNumber <= NUM_GOLD)
+		if (rockRing->currentNumber <= NUM_GOLD) 
 			rockRing->isGold[i] = true;
+		
 		else
 			rockRing->isGold[i] = false;
-		rockRing->currentNumber++;
 		rockRing->distance[i] = dista(eng);
 		rockRing->theta[i] = distr(eng);
 		rockRing->Y[i] = disty(eng);
