@@ -62,13 +62,17 @@ struct Path {
 	const char* spacecraft = "./Resources/object/spacecraft.obj";
 	const char* spacecraft_texutre = "./Resources/texture/spacecraftTexture.bmp";
 
-	//Texures for skybox
+	//Files for skybox
 	const char* skybox_back = "./Resources/texture/skybox textures/back.bmp";
 	const char* skybox_front = "./Resources/texture/skybox textures/front.bmp";
 	const char* skybox_left = "./Resources/texture/skybox textures/left.bmp";
 	const char* skybox_right = "./Resources/texture/skybox textures/right.bmp";
 	const char* skybox_top = "./Resources/texture/skybox textures/top.bmp";
 	const char* skybox_bottom = "./Resources/texture/skybox textures/bottom.bmp";
+    
+    //Files for rocket
+    const char* rocket = "./Resources/object/rocket.obj";
+    const char* rocket_texture = "./Resources/texture/rocket.png";
 };
 
 struct SpaceCraftMovement {
@@ -92,6 +96,19 @@ struct RockRing {
 };
 struct RockRing* rockRing = new struct RockRing;
 
+//Structure for rockets
+struct Rocket {
+    vec3 initial_position = vec3(rand()%10-5, 0.0f, rand()%5+5);
+    vec3 fire_direction;
+    glm::mat4 fire_position_matrix;
+    bool fire_first_determine = false;
+    int state = 0;
+    int loaded_position = 0;
+    float timer = 0;
+};
+Rocket rockets[2];
+int rockets_loaded = 0;
+
 //Structure Variables:
 Shader shader, skyboxShader;
 Path path;
@@ -112,10 +129,11 @@ GLuint planetVAO, planetEBO,
 craftVAO, craftEBO,
 rockVAO, rockEBO,
 spacecraftVAO, spacecraftEBO,
-skyboxVAO, skyboxEBO;
+skyboxVAO, skyboxEBO,
+rocketVAO, rocketEBO;
 
 //Texture vriables:
-Texture rockTexture[2], spacecraftTexture[2], craftTexture[2], planetTexture;
+Texture rockTexture[2], spacecraftTexture[2], craftTexture[2], planetTexture, rocketTexture;
 GLuint cubemapTexture;
 
 GLuint programID;
@@ -152,7 +170,8 @@ float scaleFactor = 0.2f;
 // Dimensions for model objects
 vec3 spft_dim = vec3(737.25 * scaleFactor * 0.002f, 151.1 * scaleFactor * 0.002f, 459.5 * scaleFactor * 0.002f),
 planet_dim = vec3(2.60687 * scaleFactor * 1.5f, 2.60687 * scaleFactor * 1.5f, 2.60697 * scaleFactor * 1.5f),
-loft_dim = vec3(6.2472 * scaleFactor * 0.3, 3.76656 * scaleFactor * 0.3, 6.2472 * scaleFactor * 0.3);
+loft_dim = vec3(6.2472 * scaleFactor * 0.3, 3.76656 * scaleFactor * 0.3, 6.2472 * scaleFactor * 0.3),
+rocket_dim = vec3(5.92294 * scaleFactor * 0.5f, 1.55752 * scaleFactor * 0.5f, 1.55731 * scaleFactor * 0.5f);
 
 //Boolean values for crafts collision detection (Order from near to far corresponding to the planet
 bool collision_near = false;
@@ -180,7 +199,7 @@ struct Model {
 };
 
 
-Model Planet, Rock, Spacecraft, Craft;
+Model Planet, Rock, Spacecraft, Craft, Rocket;
 
 
 void decidePosition(struct RockRing* rockRing);
@@ -529,6 +548,30 @@ void sendDataToOpenGL()
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    
+    //Load Rocket:
+    Rocket = loadOBJ(paths.rocket);
+    rocketTexture.setupTexture(paths.rocket_texture);
+    glGenVertexArrays(1, &rocketVAO);
+    glBindVertexArray(rocketVAO);
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, Rocket.vertices.size() * sizeof(Vertex), &Rocket.vertices[0], GL_STATIC_DRAW);
+    glGenBuffers(1, &rocketEBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rocketEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, Rocket.indices.size() * sizeof(unsigned int), &Rocket.indices[0], GL_STATIC_DRAW);
+
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void initializedGL(void) //run only once
@@ -704,6 +747,68 @@ void paintGL(void)  //always run
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rockEBO);
 		glDrawElements(GL_TRIANGLES, Rock.indices.size(), GL_UNSIGNED_INT, 0);
 	}
+    
+    //Draw Rocket:
+    for (int i = 0 ; i < 2 ; i++){
+        modelMatrix = mat4(1.0f);
+        if (rockets[i].state == 0) {
+            modelMatrix = glm::translate(modelMatrix, rockets[i].initial_position);
+            modelMatrix = glm::rotate(modelMatrix, float(glfwGetTime()), vec3(0.0f,1.0f,1.0f));
+            modelMatrix = glm::rotate(modelMatrix, (float)radians(90.0f), vec3(0.0f,0.0f,1.0f));
+        }
+        else if (rockets[i].state == 1) {
+            modelMatrix = glm::translate(modelMatrix, cameraPosition);
+            modelMatrix = glm::rotate(modelMatrix, glm::radians(-yaw - 90),
+                glm::vec3(0.0f, 1.0f, 0.0f));
+            modelMatrix = glm::rotate(modelMatrix, glm::radians(pitch),
+                glm::vec3(1.0f, 0.0f, 0.0f));
+            if (rockets[i].loaded_position == 1)
+                modelMatrix = glm::translate(modelMatrix, vec3(-0.3f,-camera_offset_Y-0.1f, -camera_offset_Z-0.4f));
+            if (rockets[i].loaded_position == 2)
+                modelMatrix = glm::translate(modelMatrix, vec3(0.3f,-camera_offset_Y-0.1f, -camera_offset_Z-0.4f));
+            modelMatrix = glm::rotate(modelMatrix, float(radians(90.0f)), vec3(0.0f,1.0f,0.0f));
+        }
+        else if (rockets[i].state == 2) {
+            if (glfwGetTime() - rockets[i].timer > 2)
+                rockets[i].state = 0;
+            if (rockets[i].fire_first_determine) {
+                glm::mat4 firemodelMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
+                firemodelMatrix = glm::rotate(firemodelMatrix, glm::radians(-yaw - 90),
+                    glm::vec3(0.0f, 1.0f, 0.0f));
+                firemodelMatrix = glm::rotate(firemodelMatrix, glm::radians(pitch),
+                    glm::vec3(1.0f, 0.0f, 0.0f));
+                if (rockets[i].loaded_position == 1)
+                    firemodelMatrix = glm::translate(firemodelMatrix, vec3(-0.3f,-camera_offset_Y-0.1f, -camera_offset_Z-0.4f));
+                if (rockets[i].loaded_position == 2)
+                    firemodelMatrix = glm::translate(firemodelMatrix, vec3(0.3f,-camera_offset_Y-0.1f, -camera_offset_Z-0.4f));
+                firemodelMatrix = glm::rotate(firemodelMatrix, float(radians(90.0f)), vec3(0.0f,1.0f,0.0f));
+                rockets[i].fire_position_matrix = firemodelMatrix;
+                rockets[i].fire_direction = targetDirection;
+                rockets[i].fire_first_determine = false;
+            }
+            modelMatrix = glm::translate(modelMatrix, 0.5f * rockets[i].fire_direction);
+            modelMatrix = modelMatrix * rockets[i].fire_position_matrix;
+            rockets[i].fire_position_matrix = modelMatrix;
+        }
+        modelMatrix = glm::scale(modelMatrix, vec3(scaleFactor * 0.5f, scaleFactor * 0.5f, scaleFactor * 0.5f));
+        glm::vec4 rocket_vec = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
+        if (collision_deteciton(spft_vec, glm::vec3(rocket_vec), spft_dim, rocket_dim) == 1) {
+            rockets[i].state = 1;
+            rockets_loaded += 1;
+            if (rockets_loaded == 1) {
+                rockets[i].loaded_position = 1;
+            }
+            else {
+                rockets[i].loaded_position = 2;
+            }
+        }
+        shader.setMat4("model", modelMatrix);
+        rocketTexture.bind(0);
+        shader.setInt("texureSampler0", 0);
+        glBindVertexArray(rocketVAO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rocketEBO);
+        glDrawElements(GL_TRIANGLES, Rocket.indices.size(), GL_UNSIGNED_INT, 0);
+    }
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -785,6 +890,28 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	}
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+    if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+        rockets_loaded -= 1;
+        if (rockets_loaded == 1) {
+            for (int i = 0 ; i < 2 ; i++) {
+                if (rockets[i].state == 1 && rockets[i].loaded_position == 1) {
+                    rockets[i].state = 2;
+                    rockets[i].fire_first_determine = true;
+                    rockets[i].timer = glfwGetTime();
+                }
+            }
+        }
+        else {
+            for (int i = 0 ; i < 2 ; i++) {
+                if (rockets[i].state == 1) {
+                    rockets[i].state = 2;
+                    rockets[i].fire_first_determine = true;
+                    rockets[i].timer = glfwGetTime();
+                    break;
+                }
+            }
+        }
+    }
 }
 
 
