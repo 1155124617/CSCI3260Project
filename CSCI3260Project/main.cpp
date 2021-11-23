@@ -605,9 +605,9 @@ void paintGL(void)  //always run
 
 	//Point Light:  Distance:50
 	shader.setVec3("pointLight.position", vec3(pointLightX, pointLightY, pointLightZ));
-	shader.setVec3("pointLight.ambient", 1.0f * vec3(0.237, 0.122f, 0.016f));
-	shader.setVec3("pointLight.diffuse", 2.0f * vec3(0.237f, 0.122f, 0.016f));
-	shader.setVec3("pointLight.specular", 5.0f * vec3(0.237f, 0.122f, 0.016f));
+	shader.setVec3("pointLight.ambient", 1.0f * vec3(1.0f, 1.0f, 1.0f));
+	shader.setVec3("pointLight.diffuse", 2.0f * vec3(1.0f, 1.0f, 1.0f));
+	shader.setVec3("pointLight.specular", 5.0f * vec3(1.0f,1.0f, 1.0f));
 	shader.setFloat("pointLight.constant", pointLightConstant);
 	shader.setFloat("pointLight.linear", pointLightLinear);
 	shader.setFloat("pointLight.quadratic", pointLightQudratic);
