@@ -88,6 +88,8 @@ pitch =  0.0f,
 lastX =  800.0f / 2.0,
 lastY =  600.0 / 2.0;
 
+float deltaTime = 0.0f; // 当前帧与上一帧的时间差
+float lastFrame = 0.0f; // 上一帧的时间
 
 //VAO & EBO values for the models:
 GLuint planetVAO, planetEBO,
@@ -793,6 +795,10 @@ int main(int argc, char* argv[])
 	initializedGL();
 
 	while (!glfwWindowShouldClose(window)) {
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+        spmv.speed = 4.5f * deltaTime;
 		/* Render here */
 		paintGL();
 
