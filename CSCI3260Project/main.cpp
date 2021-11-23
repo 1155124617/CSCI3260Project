@@ -114,7 +114,14 @@ vec3 targetDirection = vec3(0.0f, 0.0f, -1.0f);
 
 //Parameters for lighting:
 float directionalIntensity = 1.5f;
- 
+//--Point Light:  distance: 50
+float pointLightX=10.0f,
+pointLightY=10.0f,
+pointLightZ=10.0f,
+pointLightConstant = 1.0f,
+pointLightLinear = 0.09f,
+pointLightQudratic = 0.032f;
+
 //Parameters for crafts:
 float rotate_speed = 0.5f;
 
@@ -594,8 +601,14 @@ void paintGL(void)  //always run
 	shader.setVec3("dirLight.diffuse", vec3(0.4f, 0.4f, 0.4f));
 	shader.setVec3("dirLight.specular", vec3(0.5f, 0.5f, 0.5f));
 
-
-
+	//Point Light:  Distance:50
+	shader.setVec3("pointLight.position", vec3(pointLightX, pointLightY, pointLightZ));
+	shader.setVec3("pointLight.ambient", 1.0f * vec3(0.237, 0.122f, 0.016f));
+	shader.setVec3("pointLight.diffuse", 2.0f * vec3(0.237f, 0.122f, 0.016f));
+	shader.setVec3("pointLight.specular", 5.0f * vec3(0.237f, 0.122f, 0.016f));
+	shader.setFloat("pointLight.constant", pointLightConstant);
+	shader.setFloat("pointLight.linear", pointLightLinear);
+	shader.setFloat("pointLight.quadratic", pointLightQudratic);
 
 	//Send camera information to the shader:
 	shader.setVec3("eyePositionWorld", cameraPosition);
@@ -731,6 +744,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_RIGHT && action == GLFW_RELEASE) {
         spmv.right_pressed = false;
     }
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	glfwSetWindowShouldClose(window, true);
 }
 
 
