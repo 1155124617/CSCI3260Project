@@ -374,7 +374,7 @@ void get_OpenGL_info()
 	std::cout << "OpenGL version: " << glversion << std::endl;
 }
 
-GLuint collision_deteciton(vec3 object, vec3 ref, vec3 object_dim, vec3 ref_dim) {
+GLuint collision_detection(vec3 object, vec3 ref, vec3 object_dim, vec3 ref_dim) {
 	float object_ref_distance = glm::distance(object, ref);
 	float collision_distance = glm::distance(object_dim - ref_dim, vec3(0.0f, 0.0f, 0.0f));
 	if (object_ref_distance > collision_distance) return 0;
@@ -720,7 +720,7 @@ void paintGL(void)  //always run
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, craftEBO);
 	// Regard the central point as the object position
 	glm::vec4 loft_vec = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	if (collision_deteciton(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1) {
+	if (collision_detection(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1) {
 		collision_near = true;
 		last_time = (float)glfwGetTime();
 	}
@@ -792,7 +792,11 @@ void paintGL(void)  //always run
         }
         modelMatrix = glm::scale(modelMatrix, vec3(scaleFactor * 0.5f, scaleFactor * 0.5f, scaleFactor * 0.5f));
         glm::vec4 rocket_vec = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
-        if (collision_deteciton(spft_vec, glm::vec3(rocket_vec), spft_dim, rocket_dim) == 1) {
+        if (rockets[i].state == 2 && collision_detection(vec3(loft_vec), vec3(rocket_vec), loft_dim, rocket_dim) == 1) {
+            collision_near = true;
+            last_time = (float)glfwGetTime();
+        }
+        if (rockets[i].state == 0 && collision_detection(spft_vec, glm::vec3(rocket_vec), spft_dim, rocket_dim) == 1) {
             rockets[i].state = 1;
             rockets_loaded += 1;
             if (rockets_loaded == 1) {
