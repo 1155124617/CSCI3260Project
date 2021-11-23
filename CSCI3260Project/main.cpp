@@ -108,6 +108,8 @@ struct Rocket {
 };
 Rocket rockets[2];
 int rockets_loaded = 0;
+bool left_loaded = false;
+bool right_loaded = false;
 
 //Structure Variables:
 Shader shader, skyboxShader;
@@ -795,15 +797,24 @@ void paintGL(void)  //always run
         if (rockets[i].state == 2 && collision_detection(vec3(loft_vec), vec3(rocket_vec), loft_dim, rocket_dim) == 1) {
             collision_near = true;
             last_time = (float)glfwGetTime();
+            rockets[i].state = 0;
         }
         if (rockets[i].state == 0 && collision_detection(spft_vec, glm::vec3(rocket_vec), spft_dim, rocket_dim) == 1) {
             rockets[i].state = 1;
             rockets_loaded += 1;
             if (rockets_loaded == 1) {
                 rockets[i].loaded_position = 1;
+                left_loaded = true;
             }
             else {
-                rockets[i].loaded_position = 2;
+                if (left_loaded) {
+                    rockets[i].loaded_position = 2;
+                    right_loaded = true;
+                }
+                else {
+                    rockets[i].loaded_position = 1;
+                    left_loaded = true;
+                }
             }
         }
         shader.setMat4("model", modelMatrix);
@@ -895,6 +906,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
     if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+        if (rockets_loaded == 0) return;
         rockets_loaded -= 1;
         if (rockets_loaded == 1) {
             for (int i = 0 ; i < 2 ; i++) {
@@ -902,6 +914,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                     rockets[i].state = 2;
                     rockets[i].fire_first_determine = true;
                     rockets[i].timer = glfwGetTime();
+                    left_loaded = false;
                 }
             }
         }
@@ -911,6 +924,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                     rockets[i].state = 2;
                     rockets[i].fire_first_determine = true;
                     rockets[i].timer = glfwGetTime();
+                    left_loaded = false;
+                    right_loaded = false;
                     break;
                 }
             }
