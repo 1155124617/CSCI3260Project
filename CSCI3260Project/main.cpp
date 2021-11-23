@@ -647,11 +647,6 @@ void paintGL(void)  //always run
 	glBindVertexArray(planetVAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,planetEBO);
 	glDrawElements(GL_TRIANGLES, Planet.indices.size(), GL_UNSIGNED_INT, 0);
-    // Regard the central point as the object position
-    glm::vec4 planet_vec = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
-    if (collision_deteciton(vec3(spft_vec), vec3(planet_vec), spft_dim, planet_dim) == 1)
-        std::cout << "Collision detected" << std::endl;
-        
 
 	//Draw Local Crafts:
 	modelMatrix = mat4(1.0f);
