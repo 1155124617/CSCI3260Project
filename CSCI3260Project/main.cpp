@@ -9,17 +9,17 @@
 // SID     2: 1155141656
 //
 
-#include "Dependencies/glew/glew.h"
+/*#include "Dependencies/glew/glew.h"
 #include "Dependencies/GLFW/glfw3.h"
 #include "Dependencies/glm/glm.hpp"
 #include "Dependencies/glm/gtc/matrix_transform.hpp"
-#include "Dependencies/stb_image/stb_image.h"
+#include "Dependencies/stb_image/stb_image.h"*/
 
-/*#include "GL/glew.h"
+#include "GL/glew.h"
 #include "GLFW/glfw3.h"
 #include "glm/glm.hpp"
 #include "Dependencies/stb_image/stb_image.h"
-#include "glm/gtc/matrix_transform.hpp"*/
+#include "glm/gtc/matrix_transform.hpp"
 
 #include "Shader.h"
 #include "Texture.h"
@@ -110,6 +110,7 @@ struct Rocket rockets[2];
 int rockets_loaded = 0;
 bool left_loaded = false;
 bool right_loaded = false;
+float rocket_speed = 25.0f;
 
 //Structure Variables:
 Shader shader, skyboxShader;
@@ -798,7 +799,7 @@ void paintGL(void)  //always run
 				rockets[i].fire_direction = targetDirection;
 				rockets[i].fire_first_determine = false;
 			}
-			modelMatrix = glm::translate(modelMatrix, 0.5f * rockets[i].fire_direction);
+			modelMatrix = glm::translate(modelMatrix, rocket_speed * rockets[i].fire_direction);
 			modelMatrix = modelMatrix * rockets[i].fire_position_matrix;
 			rockets[i].fire_position_matrix = modelMatrix;
 		}
@@ -989,6 +990,7 @@ int main(int argc, char* argv[])
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 		spmv.speed = 4.5f * deltaTime;
+        rocket_speed = 25.0f * deltaTime;
 		/* Render here */
 		paintGL();
 
