@@ -39,7 +39,7 @@ using namespace glm;
 const int SCR_WIDTH = 800;
 const int SCR_HEIGHT = 600;
 const int NUM_BLOCK = 400;
-const int NUM_GOLD = 5;
+const int NUM_GOLD = 10;
 //-------------------------------Self-designed variables and structures:-----------------------------
 
 struct Path {
@@ -50,13 +50,13 @@ struct Path {
 
 	//Files for craft
 	const char* craft = "./Resources/object/craft.obj";
-	const char* red_Texture = "./Resources/texture/red.bmp";
+	const char* red_Texture = "./Resources/texture/red.png";
 	const char* ring_texture = "./Resources/texture/ringTexture.bmp";
 
 	//Files for rock
 	const char* rock = "./Resources/object/rock.obj";
 	const char* rock_texture = "./Resources/texture/rockTexture.bmp";
-	const char* gold_texture = "./Resources/texture/gold.bmp";
+	const char* gold_texture = "./Resources/texture/gold.png";
 
 	//Files for spacecraft
 	const char* spacecraft = "./Resources/object/spacecraft.obj";
@@ -670,7 +670,7 @@ void paintGL(void)  //always run
 	//Draw Local Crafts:
 	modelMatrix = mat4(1.0f);
 	modelMatrix = rotate(modelMatrix, rotate_speed * (float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
-	modelMatrix = translate(modelMatrix, vec3(0.0f, -0.1f, 5.0f));
+	modelMatrix = translate(modelMatrix, vec3(0.0f, -0.1f, 7.0f));
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
 	shader.setMat4("model", modelMatrix);
 	glBindVertexArray(craftVAO);
@@ -698,7 +698,7 @@ void paintGL(void)  //always run
 		modelMatrix = rotate(modelMatrix, (float)radians(glfwGetTime()) * rockRing->selfRotationSpeed, vec3(1.0, 0.0, 1.0));
 		modelMatrix = scale(modelMatrix, vec3(scaleFactor * rockRing->scale[i], scaleFactor * rockRing->scale[i], scaleFactor * rockRing->scale[i]));
 		shader.setMat4("model", modelMatrix);
-		rockTexture[0].bind(0);
+		rockTexture[rockRing->isGold[i]].bind(0);
 		shader.setInt("texureSampler0", 0);
 		glBindVertexArray(rockVAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rockEBO);
@@ -855,7 +855,7 @@ void decidePosition(struct RockRing* rockRing) {
 	uniform_real_distribution<> dista(4.0f, 5.5f);
 	uniform_real_distribution<> disty(-0.3f, 0.3f);
 	for (int i = 0; i < NUM_BLOCK; i++) {
-		if (rockRing->currentNumber <= NUM_BLOCK)
+		if (rockRing->currentNumber <= NUM_GOLD)
 			rockRing->isGold[i] = true;
 		else
 			rockRing->isGold[i] = false;
