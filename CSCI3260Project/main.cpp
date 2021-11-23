@@ -146,7 +146,7 @@ spftPosY = -0.1f,
 spftPosZ = 20.0f,
 camera_offset_Z = 0.85f,
 camera_offset_Y = 0.3f;
-bool goldCollected = false;
+int goldCollected = 0;
 
 float last_time = 0.0f;
 
@@ -173,6 +173,7 @@ float scaleFactor = 0.2f;
 vec3 spft_dim = vec3(737.25 * scaleFactor * 0.002f, 151.1 * scaleFactor * 0.002f, 459.5 * scaleFactor * 0.002f),
 planet_dim = vec3(2.60687 * scaleFactor * 1.5f, 2.60687 * scaleFactor * 1.5f, 2.60697 * scaleFactor * 1.5f),
 loft_dim = vec3(6.2472 * scaleFactor * 0.3, 3.76656 * scaleFactor * 0.3, 6.2472 * scaleFactor * 0.3),
+rock_dim = vec3(1.59172, 0.841796, 1.81414),
 rocket_dim = vec3(5.92294 * scaleFactor * 0.5f, 1.55752 * scaleFactor * 0.5f, 1.55731 * scaleFactor * 0.5f);
 
 //Boolean values for crafts collision detection (Order from near to far corresponding to the planet
@@ -691,7 +692,7 @@ void paintGL(void)  //always run
 	modelMatrix = rotate(modelMatrix, (float)radians(180.0), vec3(0.0, 1.0, 0.0));
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.0025, scaleFactor * 0.0025, scaleFactor * 0.0025));
 	shader.setMat4("model", modelMatrix);
-	spacecraftTexture[goldCollected].bind(0);
+	spacecraftTexture[goldCollected==5].bind(0);
 	shader.setInt("texureSampler0", 0);
 	glBindVertexArray(spacecraftVAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spacecraftEBO);
@@ -742,6 +743,13 @@ void paintGL(void)  //always run
 		modelMatrix = translate(modelMatrix, vec3(X, rockRing->Y[i], Z));
 		modelMatrix = rotate(modelMatrix, (float)radians(glfwGetTime()) * rockRing->selfRotationSpeed, vec3(1.0, 0.0, 1.0));
 		modelMatrix = scale(modelMatrix, vec3(scaleFactor * rockRing->scale[i], scaleFactor * rockRing->scale[i], scaleFactor * rockRing->scale[i]));
+        glm::vec4 rock_vec = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
+        if (rockRing->isGold[i]) {
+            if (collision_detection(spft_vec, vec3(rock_vec), spft_dim, rock_dim) == 1) {
+                rockRing->isGold[i] = false;
+                goldCollected += 1;
+            }
+        }
 		shader.setMat4("model", modelMatrix);
 		rockTexture[rockRing->isGold[i]].bind(0);
 		shader.setInt("texureSampler0", 0);
