@@ -35,7 +35,8 @@ using namespace glm;
 // screen setting
 const int SCR_WIDTH = 800;
 const int SCR_HEIGHT = 600;
-
+const int NUM_BLOCK = 400;
+const int NUM_GOLD = 5;
 //-------------------------------Self-designed variables and structures:-----------------------------
 
 struct Path{
@@ -74,7 +75,19 @@ struct SpaceCraftMovement {
     bool right_pressed = false;
     float speed = 0.1;
 };
-
+//Structure for rock ring
+struct RockRing {
+	
+	float distance[NUM_BLOCK];
+	float theta[NUM_BLOCK];
+	float Y[NUM_BLOCK];
+	float rotationSpeed=0.2f;
+	float selfRotationSpeed=5.0f;
+	float scale[NUM_BLOCK];
+	int currentNumber = 1;
+	bool isGold[NUM_BLOCK];	
+};
+struct RockRing* rockRing = new struct RockRing;
 
 //Structure Variables:
 Shader shader, skyboxShader;
@@ -167,7 +180,7 @@ struct Model {
 Model Planet, Rock, Spacecraft,Craft;
 
 
-
+void decidePosition(struct RockRing* rockRing);
 Model loadOBJ(const char* objPath)
 {
 	// function to load the obj file
@@ -670,6 +683,23 @@ void paintGL(void)  //always run
     craftTexture[collision_near].bind(0);
     shader.setInt("texureSampler0", 0);
     glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
+	
+	//Draw Rock Ring:
+	for (int i = 0; i < 400; i++) {
+		float X = cos(rockRing->theta[i]) * rockRing->distance[i];
+		float Z=sin(rockRing->theta[i]) * rockRing->distance[i];
+		modelMatrix = mat4(1.0f);
+		modelMatrix = rotate(modelMatrix, rockRing->rotationSpeed * (float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
+		modelMatrix = translate(modelMatrix, vec3(X, rockRing->Y[i],Z));
+		modelMatrix = rotate(modelMatrix, (float)radians(glfwGetTime()) * rockRing->selfRotationSpeed, vec3(1.0, 0.0, 1.0));
+		modelMatrix = scale(modelMatrix, vec3(scaleFactor * rockRing->scale[i], scaleFactor * rockRing->scale[i], scaleFactor * rockRing->scale[i]));
+		shader.setMat4("model", modelMatrix);
+		rockTexture[0].bind(0);
+		shader.setInt("texureSampler0", 0);
+		glBindVertexArray(rockVAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rockEBO);
+		glDrawElements(GL_TRIANGLES, Rock.indices.size(), GL_UNSIGNED_INT, 0);
+	}
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -757,7 +787,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 int main(int argc, char* argv[])
 {
 	GLFWwindow* window;
-
+	decidePosition(rockRing);
 	/* Initialize the glfw */
 	if (!glfwInit()) {
 		std::cout << "Failed to initialize GLFW" << std::endl;
@@ -812,5 +842,25 @@ int main(int argc, char* argv[])
 	glfwTerminate();
 
 	return 0;
+}
+
+void decidePosition(struct RockRing* rockRing) {
+	random_device rd;
+	default_random_engine eng(rd());
+	uniform_real_distribution<> distr(0.0f, 360.0f);
+	uniform_real_distribution<> dista(4.0f, 5.5f);
+	uniform_real_distribution<> disty(-0.3f, 0.3f);
+	for (int i = 0; i < NUM_BLOCK; i++) {
+		if (rockRing->currentNumber <= NUM_BLOCK)
+			rockRing->isGold[i] = true;
+		else
+			rockRing->isGold[i] = false;
+		rockRing->currentNumber++;
+		rockRing->distance[i] = dista(eng);
+		rockRing->theta[i] = distr(eng);
+		rockRing->Y[i] = disty(eng);
+		rockRing->currentNumber++;
+		rockRing->scale[i] = (rand() % 5+5) / 20.0f;
+	}
 }
 
