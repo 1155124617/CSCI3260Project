@@ -109,6 +109,8 @@ spftPosZ = 10.0f,
 camera_offset_Z = 0.85f,
 camera_offset_Y = 0.3f;
 bool goldCollected = false;
+
+float last_time = 0.0f;
 	
 vec3 targetDirection = vec3(0.0f, 0.0f, -1.0f);
 
@@ -330,7 +332,6 @@ void get_OpenGL_info()
 GLuint collision_deteciton(vec3 object, vec3 ref, vec3 object_dim, vec3 ref_dim) {
     float object_ref_distance = glm::distance(object, ref);
     float collision_distance = glm::distance(object_dim - ref_dim, vec3(0.0f,0.0f,0.0f));
-    // std::cout << collision_distance << std::endl;
     if (object_ref_distance > collision_distance) return 0;
     else return 1;
 }
@@ -643,15 +644,20 @@ void paintGL(void)  //always run
 	modelMatrix = translate(modelMatrix, vec3(0.0f, -0.1f, 5.0f));
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
 	shader.setMat4("model", modelMatrix);
-	craftTexture[collision_near].bind(0);
-	shader.setInt("texureSampler0", 0);
 	glBindVertexArray(craftVAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, craftEBO);
-	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
     // Regard the central point as the object position
     glm::vec4 loft_vec = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
-    if (collision_deteciton(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1)
-        std::cout << "Collision detected" << std::endl;
+    if (collision_deteciton(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1) {
+        collision_near = true;
+        last_time = (float)glfwGetTime();
+    }
+    else
+        if ((float)glfwGetTime() - last_time > 2)
+            collision_near = false;
+    craftTexture[collision_near].bind(0);
+    shader.setInt("texureSampler0", 0);
+    glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
