@@ -64,7 +64,7 @@ void main()
 	/*vec3 resultColor=CalDircLight(dirLight,normal,eyeVectorWorld)+
 					CalPointLight(pointLight,normal,eyeVectorWorld,vertexWorld)+
 					CalSpotLight(spotLight,normal,eyeVectorWorld,vertexWorld);*/
-	vec3 resultColor=CalDircLight(dirLight,normal,eyeVectorWorld);
+	vec3 resultColor=CalDircLight(dirLight,normal,eyeVectorWorld)+CalPointLight(pointLight,normal,eyeVectorWorld,vertexWorld);
 	finalColor=vec4(resultColor,1.0f);
 }
 
