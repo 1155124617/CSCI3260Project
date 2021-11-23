@@ -118,12 +118,13 @@ float directionalIntensity = 1.5f;
 //Parameters for crafts:
 float rotate_speed = 0.5f;
 
-  
-  
- 
- 
 //Scale factor: control the size of all object
 float scaleFactor = 0.2f;
+
+// Dimensions for model objects
+vec3 spft_dim = vec3(737.25 * scaleFactor * 0.002f, 151.1 * scaleFactor * 0.002f, 459.5 * scaleFactor * 0.002f),
+planet_dim = vec3(2.60687 * scaleFactor * 1.5f, 2.60687 * scaleFactor * 1.5f, 2.60697 * scaleFactor * 1.5f),
+loft_dim=  vec3(6.2472 * scaleFactor * 0.3, 3.76656 * scaleFactor * 0.3, 6.2472 * scaleFactor * 0.3);
 
 //Boolean values for crafts collision detection (Order from near to far corresponding to the planet
 bool collision_near = false;
@@ -192,8 +193,12 @@ Model loadOBJ(const char* objPath)
 		std::cerr << "Impossible to open the file! Do you use the right path? See Tutorial 6 for details" << std::endl;
 		exit(1);
 	}
-    float max_y = -1.0f;
-    float min_y = 1.0f;
+    float max_y = -100.0f;
+    float min_y = 100.0f;
+    float max_x = -100.0f;
+    float min_x = 100.0f;
+    float max_z = -100.0f;
+    float min_z = 100.0f;
 
 	while (!file.eof()) {
 		// process the object file
@@ -205,6 +210,10 @@ Model loadOBJ(const char* objPath)
 			file >> position.x >> position.y >> position.z;
             if (position.y > max_y) max_y = position.y;
             if (position.y < min_y) min_y = position.y;
+            if (position.z > max_z) max_z = position.z;
+            if (position.z < min_z) min_z = position.z;
+            if (position.x > max_x) max_x = position.x;
+            if (position.x < min_x) min_x = position.x;
 			temp_positions.push_back(position);
 		}
 		else if (strcmp(lineHeader, "vt") == 0) {
@@ -263,13 +272,14 @@ Model loadOBJ(const char* objPath)
 			file.getline(stupidBuffer, 1024);
 		}
 	}
-    std::cout << "max_y" << max_y << "min_y" << min_y <<std::endl;
+    std::cout << "dimension: "<< "x: " << (max_x-min_x)/2 << " y: " << (max_y-min_y)/2 << " z: " << (max_z-min_z)/2 <<std::endl;
     std::cout << "should move " << -(max_y+min_y)/2  << std::endl;
 	file.close();
 
 	std::cout << "There are " << num_vertices << " vertices in the obj file.\n" << std::endl;
 	return model;
 }
+
 GLuint loadCubemap(std::vector<const GLchar*> faces)
 {
 	int width, height, BPP;
@@ -305,6 +315,7 @@ GLuint loadCubemap(std::vector<const GLchar*> faces)
 
 	return textureID;
 }
+
 void get_OpenGL_info()
 {
 	// OpenGL information
@@ -314,6 +325,14 @@ void get_OpenGL_info()
 	std::cout << "OpenGL company: " << name << std::endl;
 	std::cout << "Renderer name: " << renderer << std::endl;
 	std::cout << "OpenGL version: " << glversion << std::endl;
+}
+
+GLuint collision_deteciton(vec3 object, vec3 ref, vec3 object_dim, vec3 ref_dim) {
+    float object_ref_distance = glm::distance(object, ref);
+    float collision_distance = glm::distance(object_dim - ref_dim, vec3(0.0f,0.0f,0.0f));
+    // std::cout << collision_distance << std::endl;
+    if (object_ref_distance > collision_distance) return 0;
+    else return 1;
 }
 
 void sendDataToOpenGL()
@@ -581,12 +600,30 @@ void paintGL(void)  //always run
 	//Send camera information to the shader:
 	shader.setVec3("eyePositionWorld", cameraPosition);
 
+    //Draw Spacecraft:
+    modelMatrix = mat4(1.0f);
+    modelMatrix = translate(modelMatrix, cameraPosition);
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(-yaw-90),
+        glm::vec3(0.0f, 1.0f, 0.0f));
+    modelMatrix = glm::rotate(modelMatrix, glm::radians(pitch),
+        glm::vec3(1.0f, 0.0f, 0.0f));
+    modelMatrix = translate(modelMatrix, vec3(0.0f, -camera_offset_Y, -camera_offset_Z));
+    modelMatrix = rotate(modelMatrix, (float)radians(180.0), vec3(0.0, 1.0, 0.0));
+    modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.002, scaleFactor * 0.002, scaleFactor * 0.002));
+    shader.setMat4("model", modelMatrix);
+    spacecraftTexture[goldCollected].bind(0);
+    shader.setInt("texureSampler0", 0);
+    glBindVertexArray(spacecraftVAO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spacecraftEBO);
+    glDrawElements(GL_TRIANGLES, Spacecraft.indices.size(), GL_UNSIGNED_INT, 0);
+    // Regard the central point as the object position
+    glm::vec4 spft_vec = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
+    
 	//Draw Planet:
 	modelMatrix = mat4(1.0f);
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 1.5f, scaleFactor * 1.5f, scaleFactor * 1.5f));
 	modelMatrix = rotate(modelMatrix, (float)(glfwGetTime()* 0.1f), vec3(0.0f, 1.0f, 0.0f));
 	modelMatrix = rotate(modelMatrix, (float)radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
-    modelMatrix = scale(modelMatrix, vec3(5.0f,5.0f,5.0f));
     modelMatrix = translate(modelMatrix, vec3(0.0f, -1.04894f, 0.0f));
 	shader.setMat4("model", modelMatrix);
 	planetTexture.bind(0);
@@ -594,23 +631,11 @@ void paintGL(void)  //always run
 	glBindVertexArray(planetVAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,planetEBO);
 	glDrawElements(GL_TRIANGLES, Planet.indices.size(), GL_UNSIGNED_INT, 0);
-
-	//Draw Spacecraft:
-	modelMatrix = mat4(1.0f);
-	modelMatrix = translate(modelMatrix, cameraPosition);
-    modelMatrix = glm::rotate(modelMatrix, glm::radians(-yaw-90),
-        glm::vec3(0.0f, 1.0f, 0.0f));
-    modelMatrix = glm::rotate(modelMatrix, glm::radians(pitch),
-        glm::vec3(1.0f, 0.0f, 0.0f));
-    modelMatrix = translate(modelMatrix, vec3(0.0f, -camera_offset_Y, -camera_offset_Z));
-	modelMatrix = rotate(modelMatrix, (float)radians(180.0), vec3(0.0, 1.0, 0.0));
-	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.002, scaleFactor * 0.002, scaleFactor * 0.002));
-	shader.setMat4("model", modelMatrix);
-	spacecraftTexture[goldCollected].bind(0);
-	shader.setInt("texureSampler0", 0);
-	glBindVertexArray(spacecraftVAO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spacecraftEBO);
-	glDrawElements(GL_TRIANGLES, Spacecraft.indices.size(), GL_UNSIGNED_INT, 0);
+    // Regard the central point as the object position
+    glm::vec4 planet_vec = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
+    if (collision_deteciton(vec3(spft_vec), vec3(planet_vec), spft_dim, planet_dim) == 1)
+        std::cout << "Collision detected" << std::endl;
+        
 
 	//Draw Local Crafts:
 	modelMatrix = mat4(1.0f);
@@ -623,6 +648,10 @@ void paintGL(void)  //always run
 	glBindVertexArray(craftVAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, craftEBO);
 	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
+    // Regard the central point as the object position
+    glm::vec4 loft_vec = modelMatrix * glm::vec4(0.0f,0.0f,0.0f,1.0f);
+    if (collision_deteciton(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1)
+        std::cout << "Collision detected" << std::endl;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
