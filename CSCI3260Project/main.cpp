@@ -181,7 +181,12 @@ rocket_dim = vec3(5.92294 * scaleFactor * 0.5f, 1.55752 * scaleFactor * 0.5f, 1.
 bool collision_near = false;
 bool collision_middle = false;
 bool collision_far = false;
-
+bool collision_horizontal_near = false;
+bool collision_horizontal_middle = false;
+bool collision_horizontal_far = false;
+float holdTime[3];
+float lastTime[3];
+float horizontal_offset[3];
 
 //--------------------------------------------------End-------------------------------------------
 
@@ -716,8 +721,9 @@ void paintGL(void)  //always run
 
 	//Draw Local Crafts:
 	modelMatrix = mat4(1.0f);
-	modelMatrix = rotate(modelMatrix, rotate_speed * (float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
-	modelMatrix = translate(modelMatrix, vec3(0.0f, -0.1f, 7.0f));
+	modelMatrix = rotate(modelMatrix, rotate_speed * (float)glfwGetTime()*1.5f, vec3(0.0, 1.0, 0.0));
+	modelMatrix = translate(modelMatrix, vec3(0.0f, -0.1f, 8.0f));
+	modelMatrix = rotate(modelMatrix, 0.5f * (float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
 	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
 	shader.setMat4("model", modelMatrix);
 	glBindVertexArray(craftVAO);
@@ -732,6 +738,137 @@ void paintGL(void)  //always run
 		if ((float)glfwGetTime() - last_time > 2)
 			collision_near = false;
 	craftTexture[collision_near].bind(0);
+	shader.setInt("texureSampler0", 0);
+	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
+
+	//Middle one:
+	modelMatrix = mat4(1.0f);
+	modelMatrix = rotate(modelMatrix, rotate_speed * (float)glfwGetTime()*2.0f, vec3(0.0, 1.0, 0.0));
+	modelMatrix = translate(modelMatrix, vec3(4.0f, -0.1f, 9.0f));
+	modelMatrix = rotate(modelMatrix, 0.5f * (float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
+	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
+	shader.setMat4("model", modelMatrix);
+	glBindVertexArray(craftVAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, craftEBO);
+	// Regard the central point as the object position
+	loft_vec = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	if (collision_detection(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1) {
+		collision_middle = true;
+		last_time = (float)glfwGetTime();
+	}
+	else
+		if ((float)glfwGetTime() - last_time > 2)
+			collision_middle = false;
+	craftTexture[collision_middle].bind(0);
+	shader.setInt("texureSampler0", 0);
+	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
+
+	//Far one:
+	modelMatrix = mat4(1.0f);
+	modelMatrix = rotate(modelMatrix, rotate_speed * (float)glfwGetTime() * 4.0f, vec3(0.0, 1.0, 0.0));
+	modelMatrix = translate(modelMatrix, vec3(7.0f, -0.1f, 10.0f));
+	modelMatrix = rotate(modelMatrix, 0.5f * (float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
+	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
+	shader.setMat4("model", modelMatrix);
+	glBindVertexArray(craftVAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, craftEBO);
+	// Regard the central point as the object position
+	loft_vec = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	if (collision_detection(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1) {
+		collision_far = true;
+		last_time = (float)glfwGetTime();
+	}
+	else
+		if ((float)glfwGetTime() - last_time > 2)
+			collision_far = false;
+	craftTexture[collision_far].bind(0);
+	shader.setInt("texureSampler0", 0);
+	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
+
+	//Horizontal near:
+	holdTime[0] = glfwGetTime() - lastTime[0];
+	if (holdTime[0] >= 2.0f) {
+		if (horizontal_offset[0] >= 6.0f)
+			horizontal_offset[0] = 0.0f;
+		else
+			horizontal_offset[0] += 2.0f;
+		lastTime[0] = glfwGetTime();
+	}
+	modelMatrix = mat4(1.0f);
+	modelMatrix = translate(modelMatrix, vec3(-4.0f+horizontal_offset[0], -0.1f, 10.0f));
+	modelMatrix = rotate(modelMatrix, 0.5f * (float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
+	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
+	shader.setMat4("model", modelMatrix);
+	glBindVertexArray(craftVAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, craftEBO);
+	// Regard the central point as the object position
+	loft_vec = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	if (collision_detection(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1) {
+		collision_horizontal_near = true;
+		last_time = (float)glfwGetTime();
+	}
+	else
+		if ((float)glfwGetTime() - last_time > 2)
+			collision_horizontal_near = false;
+	craftTexture[collision_horizontal_near].bind(0);
+	shader.setInt("texureSampler0", 0);
+	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
+
+	//Horizontal Middle
+	holdTime[1] = glfwGetTime() - lastTime[1];
+	if (holdTime[1] >= 1.8f) {
+		if (horizontal_offset[1] >= 10.0f)
+			horizontal_offset[1] = 0.0f;
+		else
+			horizontal_offset[1] += 2.5f;
+		lastTime[1] = glfwGetTime();
+	}
+	modelMatrix = mat4(1.0f);
+	modelMatrix = translate(modelMatrix, vec3(-5.0f + horizontal_offset[1], -0.1f, 11.0f));
+	modelMatrix = rotate(modelMatrix, 0.5f * (float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
+	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
+	shader.setMat4("model", modelMatrix);
+	glBindVertexArray(craftVAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, craftEBO);
+	// Regard the central point as the object position
+	loft_vec = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	if (collision_detection(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1) {
+		collision_horizontal_middle = true;
+		last_time = (float)glfwGetTime();
+	}
+	else
+		if ((float)glfwGetTime() - last_time > 2)
+			collision_horizontal_middle = false;
+	craftTexture[collision_horizontal_middle].bind(0);
+	shader.setInt("texureSampler0", 0);
+	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
+
+	//Horizontal Far
+	holdTime[2] = glfwGetTime() - lastTime[2];
+	if (holdTime[2] >= 1.5f) {
+		if (horizontal_offset[2] >= 12.0f)
+			horizontal_offset[2] = 0.0f;
+		else
+			horizontal_offset[2] += 3.0f;
+		lastTime[2] = glfwGetTime();
+	}
+	modelMatrix = mat4(1.0f);
+	modelMatrix = translate(modelMatrix, vec3(-6.0f + horizontal_offset[2], -0.1f, 11.0f));
+	modelMatrix = rotate(modelMatrix, 0.5f * (float)glfwGetTime(), vec3(0.0, 1.0, 0.0));
+	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 0.3, scaleFactor * 0.3, scaleFactor * 0.3));
+	shader.setMat4("model", modelMatrix);
+	glBindVertexArray(craftVAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, craftEBO);
+	// Regard the central point as the object position
+	loft_vec = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	if (collision_detection(vec3(spft_vec), vec3(loft_vec), spft_dim, loft_dim) == 1) {
+		collision_horizontal_far = true;
+		last_time = (float)glfwGetTime();
+	}
+	else
+		if ((float)glfwGetTime() - last_time > 2)
+			collision_horizontal_far = false;
+	craftTexture[collision_horizontal_far].bind(0);
 	shader.setInt("texureSampler0", 0);
 	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
 
@@ -949,6 +1086,9 @@ int main(int argc, char* argv[])
 {
 	GLFWwindow* window;
 	decidePosition(rockRing);
+	for (int i = 0; i < 3; i++) {
+		lastTime[0]=lastTime[1]=lastTime[2] = glfwGetTime();
+	}
 	/* Initialize the glfw */
 	if (!glfwInit()) {
 		std::cout << "Failed to initialize GLFW" << std::endl;
