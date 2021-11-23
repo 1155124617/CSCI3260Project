@@ -113,14 +113,15 @@ bool goldCollected = false;
 vec3 targetDirection = vec3(0.0f, 0.0f, -1.0f);
 
 //Parameters for lighting:
-float directionalIntensity = 1.5f;
+float directionalIntensity = 0.4f;
 //--Point Light:  distance: 50
 float pointLightX=10.0f,
 pointLightY=10.0f,
 pointLightZ=10.0f,
 pointLightConstant = 1.0f,
-pointLightLinear = 0.09f,
-pointLightQudratic = 0.032f;
+pointLightLinear = 0.045f,
+pointLightQudratic = 0.0075f,
+pointLightIntensity=1.0f;
 
 //Parameters for crafts:
 float rotate_speed = 0.5f;
@@ -609,6 +610,7 @@ void paintGL(void)  //always run
 	shader.setFloat("pointLight.constant", pointLightConstant);
 	shader.setFloat("pointLight.linear", pointLightLinear);
 	shader.setFloat("pointLight.quadratic", pointLightQudratic);
+	shader.setFloat("pointLight.intensity",pointLightIntensity);
 
 	//Send camera information to the shader:
 	shader.setVec3("eyePositionWorld", cameraPosition);
