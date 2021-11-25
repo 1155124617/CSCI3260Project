@@ -117,7 +117,7 @@ bool right_loaded = false;
 float rocket_speed = 25.0f;
 
 //Structure Variables:
-Shader shader, skyboxShader;
+Shader shader, skyboxShader, planetShader;
 Path path;
 SpaceCraftMovement spmv;
 
@@ -141,7 +141,7 @@ rocketVAO, rocketEBO,
 coinVAO,coinEBO;
 
 //Texture vriables:
-Texture rockTexture[2], spacecraftTexture[2], craftTexture[2], planetTexture, rocketTexture,coinTexture;
+Texture rockTexture[2], spacecraftTexture[2], craftTexture[2], planetTexture, rocketTexture,coinTexture,planetNormal;
 GLuint cubemapTexture;
 
 GLuint programID;
@@ -208,16 +208,20 @@ struct Vertex {
 	glm::vec3 position;
 	glm::vec2 uv;
 	glm::vec3 normal;
+    glm::vec3 tangent;
+    glm::vec3 bitangent;
 };
 
 struct Model {
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
+    std::vector<Vertex> vertices_without_indices;
+    /*std::vector<vec3> tangents;
+    std::vector<vec3> bitangents;*/
 };
 
 
 Model Planet, Rock, Spacecraft, Craft, Rocket,Coin;
-
 
 void decidePosition(struct RockRing* rockRing);
 Model loadOBJ(const char* objPath)
@@ -310,6 +314,8 @@ Model loadOBJ(const char* objPath)
 				exit(1);
 			}
 
+            glm::vec3 tangent;
+            glm::vec3 bitangent;
 			for (int i = 0; i < 3; i++) {
 				if (temp_vertices.find(vertices[i]) == temp_vertices.end()) {
 					// the vertex never shows before
@@ -328,6 +334,34 @@ Model loadOBJ(const char* objPath)
 					unsigned int index = temp_vertices[vertices[i]];
 					model.indices.push_back(index);
 				}
+                if (i % 3 == 0) {
+                    glm::vec3 v0 = temp_positions[vertices[i+0].index_position - 1];
+                    glm::vec3 v1 = temp_positions[vertices[i+1].index_position - 1];
+                    glm::vec3 v2 = temp_positions[vertices[i+2].index_position - 1];
+                    // Position delta
+                    glm::vec3 deltaPos1 = v1 - v0;
+                    glm::vec3 deltaPos2 = v2 - v0;
+                    
+                    glm::vec2 uv0 = temp_uvs[vertices[i+0].index_uv - 1];
+                    glm::vec2 uv1 = temp_uvs[vertices[i+1].index_uv - 1];
+                    glm::vec2 uv2 = temp_uvs[vertices[i+2].index_uv - 1];
+                    // UV delta
+                    glm::vec2 deltaUV1 = uv1 - uv0;
+                    glm::vec2 deltaUV2 = uv2 - uv0;
+                    
+                    float factor = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV1.y * deltaUV2.x);
+                    tangent = (deltaPos1 * deltaUV2.y - deltaPos2 * deltaUV1.y) * factor;
+                    bitangent = (deltaPos2 * deltaUV1.x - deltaPos1 * deltaUV2.x) * factor;
+                    /*model.tangents.push_back(tangent);
+                    model.bitangents.push_back(bitangent);*/
+                }
+                Vertex v;
+                v.position = temp_positions[vertices[i].index_position - 1];
+                v.uv = temp_uvs[vertices[i].index_uv - 1];
+                v.normal = temp_normals[vertices[i].index_normal - 1];
+                v.tangent = tangent;
+                v.bitangent = bitangent;
+                model.vertices_without_indices.push_back(v);
 			} // for
 		} // else if
 		else {
@@ -469,14 +503,15 @@ void sendDataToOpenGL()
 	//Load Planet:
 	Planet = loadOBJ(paths.planet);
 	planetTexture.setupTexture(paths.planet_image_texture);
+    planetNormal.setupTexture(paths.planet_normal_texture);
 	glGenVertexArrays(1, &planetVAO);
 	glBindVertexArray(planetVAO);
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, Planet.vertices.size() * sizeof(Vertex), &Planet.vertices[0], GL_STATIC_DRAW);
-	glGenBuffers(1, &planetEBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, planetEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Planet.indices.size() * sizeof(unsigned int), &Planet.indices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, Planet.vertices_without_indices.size() * sizeof(Vertex), &Planet.vertices_without_indices[0], GL_STATIC_DRAW);
+	//glGenBuffers(1, &planetEBO);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, planetEBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, Planet.indices.size() * sizeof(unsigned int), &Planet.indices[0], GL_STATIC_DRAW);
 
 
 	glEnableVertexAttribArray(0);
@@ -485,6 +520,11 @@ void sendDataToOpenGL()
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, tangent));
+    glEnableVertexAttribArray(4);
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, bitangent));
+    
 
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -741,24 +781,30 @@ void paintGL(void)  //always run
 	shader.setMat4("model", modelMatrix);
 	spacecraftTexture[goldCollected == NUM_GOLD].bind(0);
 	shader.setInt("texureSampler0", 0);
+    shader.setInt("normalMapping_flag", 0);
 	glBindVertexArray(spacecraftVAO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, spacecraftEBO);
 	glDrawElements(GL_TRIANGLES, Spacecraft.indices.size(), GL_UNSIGNED_INT, 0);
 	// Regard the central point as the object position
 	glm::vec4 spft_vec = modelMatrix * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    glBindVertexArray(0);
 
-	//Draw Planet:
-	modelMatrix = mat4(1.0f);
-	modelMatrix = scale(modelMatrix, vec3(scaleFactor * 4.5f, scaleFactor * 4.5f, scaleFactor * 4.5f));
-	modelMatrix = rotate(modelMatrix, (float)(glfwGetTime() * 0.1f), vec3(0.0f, 1.0f, 0.0f));
-	modelMatrix = rotate(modelMatrix, (float)radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
-	modelMatrix = translate(modelMatrix, vec3(0.0f, -1.04894f, 0.0f));
-	shader.setMat4("model", modelMatrix);
-	planetTexture.bind(0);
-	shader.setInt("texureSampler0", 0);
-	glBindVertexArray(planetVAO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, planetEBO);
-	glDrawElements(GL_TRIANGLES, Planet.indices.size(), GL_UNSIGNED_INT, 0);
+    //Draw Planet:
+    modelMatrix = mat4(1.0f);
+    modelMatrix = scale(modelMatrix, vec3(scaleFactor * 4.5f, scaleFactor * 4.5f, scaleFactor * 4.5f));
+    modelMatrix = rotate(modelMatrix, (float)(glfwGetTime() * 0.1f), vec3(0.0f, 1.0f, 0.0f));
+    modelMatrix = rotate(modelMatrix, (float)radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
+    modelMatrix = translate(modelMatrix, vec3(0.0f, -1.04894f, 0.0f));
+    shader.setMat4("model", modelMatrix);
+    planetTexture.bind(0);
+    shader.setInt("textureSampler0", 0);
+    planetNormal.bind(1);
+    shader.setInt("textureSampler1", 1);
+    shader.setInt("normalMapping_flag", 1);
+    glBindVertexArray(planetVAO);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, planetEBO);
+    //glDrawElements(GL_TRIANGLES, Planet.indices.size(), GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, Planet.vertices_without_indices.size());
 
 	//Draw Local Crafts:
 	modelMatrix = mat4(1.0f);
@@ -780,6 +826,7 @@ void paintGL(void)  //always run
 			collision_near = false;
 	craftTexture[collision_near].bind(0);
 	shader.setInt("texureSampler0", 0);
+    shader.setInt("normalMapping_flag", 0);
 	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
 
 	//Middle one:
@@ -802,6 +849,7 @@ void paintGL(void)  //always run
 			collision_middle = false;
 	craftTexture[collision_middle].bind(0);
 	shader.setInt("texureSampler0", 0);
+    shader.setInt("normalMapping_flag", 0);
 	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
 
 	//Far one:
@@ -824,6 +872,7 @@ void paintGL(void)  //always run
 			collision_far = false;
 	craftTexture[collision_far].bind(0);
 	shader.setInt("texureSampler0", 0);
+    shader.setInt("normalMapping_flag", 0);
 	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
 
 	//Horizontal near:
@@ -853,6 +902,7 @@ void paintGL(void)  //always run
 			collision_horizontal_near = false;
 	craftTexture[collision_horizontal_near].bind(0);
 	shader.setInt("texureSampler0", 0);
+    shader.setInt("normalMapping_flag", 0);
 	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
 
 	//Horizontal Middle
@@ -882,6 +932,7 @@ void paintGL(void)  //always run
 			collision_horizontal_middle = false;
 	craftTexture[collision_horizontal_middle].bind(0);
 	shader.setInt("texureSampler0", 0);
+    shader.setInt("normalMapping_flag", 0);
 	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
 
 	//Horizontal Far
@@ -911,6 +962,7 @@ void paintGL(void)  //always run
 			collision_horizontal_far = false;
 	craftTexture[collision_horizontal_far].bind(0);
 	shader.setInt("texureSampler0", 0);
+    shader.setInt("normalMapping_flag", 0);
 	glDrawElements(GL_TRIANGLES, Craft.indices.size(), GL_UNSIGNED_INT, 0);
 
 
@@ -934,6 +986,7 @@ void paintGL(void)  //always run
 		shader.setMat4("model", modelMatrix);
 		rockTexture[rockRing->isGold[i]].bind(0);
 		shader.setInt("texureSampler0", 0);
+        shader.setInt("normalMapping_flag", 0);
 		glBindVertexArray(rockVAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rockEBO);
 		glDrawElements(GL_TRIANGLES, Rock.indices.size(), GL_UNSIGNED_INT, 0);
@@ -955,6 +1008,7 @@ void paintGL(void)  //always run
 	if(!speedMode){
 		coinTexture.bind(0);
 		shader.setInt("texureSampler0", 0);
+        shader.setInt("normalMapping_flag", 0);
 		glDrawElements(GL_TRIANGLES, Coin.indices.size(), GL_UNSIGNED_INT, 0);
 	}
 	
@@ -1028,6 +1082,7 @@ void paintGL(void)  //always run
 		shader.setMat4("model", modelMatrix);
 		rocketTexture.bind(0);
 		shader.setInt("texureSampler0", 0);
+        shader.setInt("normalMapping_flag", 0);
 		glBindVertexArray(rocketVAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, rocketEBO);
 		glDrawElements(GL_TRIANGLES, Rocket.indices.size(), GL_UNSIGNED_INT, 0);

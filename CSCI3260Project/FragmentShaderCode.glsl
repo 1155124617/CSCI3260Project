@@ -45,21 +45,31 @@ out vec4 finalColor;
 in vec3 normalWorld;
 in vec3 vertexWorld;
 in vec2 uvCoord;
+in mat3 TBN;
 
 
 uniform PointLight pointLight;
 uniform DirLight dirLight;
 uniform SpotLight spotLight;
 uniform sampler2D textureSampler0;
+uniform sampler2D textureSampler1;
 uniform vec3 eyePositionWorld;
+uniform int normalMapping_flag;
 
 vec3 CalDircLight(DirLight light,vec3 normalWorld, vec3 eyeVectorWorld);
 vec3 CalPointLight(PointLight pointLight, vec3 normalWorld,vec3 eyeVectorWorld,vec3 vertexWorld);
 vec3 CalSpotLight(SpotLight spotLight, vec3 normalWorld, vec3 eyeVectorWorld, vec3 vertexWorld);
 void main()
 {
-
-	vec3 normal=normalize(normalWorld);
+    vec3 normal;
+    if (normalMapping_flag == 1) {
+        normal = texture(textureSampler1, uvCoord).rgb;
+        normal = normal * 2.0 - 1.0;
+        normal = normalize(TBN * normal);
+    }
+    else {
+        normal=normalize(normalWorld);
+    }
 	vec3 eyeVectorWorld=normalize(eyePositionWorld-vertexWorld);
 	/*vec3 resultColor=CalDircLight(dirLight,normal,eyeVectorWorld)+
 					CalPointLight(pointLight,normal,eyeVectorWorld,vertexWorld)+
