@@ -36,4 +36,4 @@ Use **Up**,**Down**,**Left**,**Right** to control the moving direction. Use mous
 **ESC**: Exit the game
 
 ## How to play
-All you need to do is download the folder **Running_Required** and open the exe file in the folder.
+All you need to do is download the folder **Running_Required** and open the exe file in the folder. *Note: Currently this supports Windows OS.*
