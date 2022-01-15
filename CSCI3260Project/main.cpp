@@ -3,10 +3,6 @@
 //  CSCI3260Project
 //
 //  Created by walter on 22/11/2021.
-// Student 1: DING Baizeng
-// SID     1: 1155124617
-// Student 2: DAI Zijie
-// SID     2: 1155141656
 //
 
 /*#include "Dependencies/glew/glew.h"
