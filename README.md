@@ -18,7 +18,7 @@ There are also some tools we designed to help you make the collection and explor
 <p align="center">
 <img src="/Images/Coin.png" width=400>    <img src="/Images/Rocket.png" width=400> 
 </p>
-You can collect both of them. Collecting coin will unlock the **Speed Mode** of the aircraft, and collect rockets will allow you to shoot them. If the local craft is shot, it will disappear.
+You can collect both of them. Collecting coin will unlock the Speed Mode of the aircraft, and collect rockets will allow you to shoot them. If the local craft is shot, it will disappear.
 <p align="center">
 <img src="/Images/Shooting.png" width=400>
 </p>
